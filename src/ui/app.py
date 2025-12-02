@@ -10,7 +10,7 @@ from textual.binding import Binding
 
 from src.ui.widgets.chat_pane import ChatPane
 from src.ui.widgets.sidebar import Sidebar, MemberList
-from src.ui.screens import TeletextScreen
+from src.ui.screens import TeletextScreen, HomeScreen
 from src.core.irc_client import IRCClient
 from src.core.mcp_client import MCPClient
 from src.core.wormhole import WormholeClient
@@ -33,24 +33,14 @@ class CordTUI(App):
         self.config = self._load_config()
         self.current_channel = "#general"
         self.irc_connected = False
-        
-        # Initialize backend components
-        server = self.config["servers"][0]
-        self.irc = IRCClient(
-            host=server["host"],
-            port=server["port"],
-            nick=server["nick"],
-            ssl=server["ssl"]
-        )
+        self.irc = None
         self.mcp = MCPClient()
         self.wormhole = WormholeClient()
-        self.audio = AudioEngine(
-            enabled=self.config["audio"]["enabled"],
-            volume=self.config["audio"]["volume"]
-        )
+        self.audio = None
+        self.input_bar = None
+        self.chat_pane = None
         
-        # Set up callbacks
-        self.irc.set_message_callback(self._on_irc_message)
+        # Set up wormhole callback
         self.wormhole.set_status_callback(self._on_wormhole_status)
     
     def _load_config(self) -> dict:
@@ -84,12 +74,43 @@ class CordTUI(App):
         yield Footer()
     
     async def on_mount(self):
-        """Initialize connections on mount."""
+        """Show home screen first."""
+        self.push_screen(HomeScreen(config=self.config))
+
+    def on_home_screen_settings_confirmed(self, event: HomeScreen.SettingsConfirmed):
+        """Handle settings from home screen."""
+        # Update config with user settings
+        self.config["servers"][0]["nick"] = event.nick
+        self.config["audio"]["enabled"] = event.audio_enabled
+        self.config["audio"]["volume"] = event.volume
+        
+        # Initialize IRC client with chosen nick
+        server = self.config["servers"][0]
+        self.irc = IRCClient(
+            host=server["host"],
+            port=server["port"],
+            nick=event.nick,
+            ssl=server["ssl"]
+        )
+        self.irc.set_message_callback(self._on_irc_message)
+        
+        # Initialize audio with chosen settings
+        self.audio = AudioEngine(
+            enabled=event.audio_enabled,
+            volume=event.volume
+        )
+        
+        # Pop home screen and start main app
+        self.pop_screen()
+        self._start_main_app()
+
+    def _start_main_app(self):
+        """Initialize the main app after home screen."""
         self.chat_pane = self.query_one("#chat-pane", ChatPane)
         self.input_bar = self.query_one("#input-bar", Input)
         
         # Welcome message
-        self.chat_pane.add_message("System", "Welcome to Cord-TUI! 🚀", is_system=True)
+        self.chat_pane.add_message("System", f"Welcome to Cord-TUI, {self.irc.nick}! 🚀", is_system=True)
         self.chat_pane.add_message("System", "Press F1 for Teletext Dashboard", is_system=True)
         
         # Connect to IRC in background
@@ -133,6 +154,10 @@ class CordTUI(App):
     
     async def on_input_submitted(self, event: Input.Submitted):
         """Handle message submission."""
+        # Ignore if input_bar not yet initialized (e.g., from HomeScreen)
+        if not hasattr(self, "input_bar") or self.input_bar is None:
+            return
+        
         message = event.value.strip()
         if not message:
             return
@@ -199,4 +224,5 @@ class CordTUI(App):
     
     async def on_unmount(self):
         """Clean up on exit."""
-        await self.irc.disconnect()
+        if self.irc:
+            await self.irc.disconnect()

@@ -136,3 +136,41 @@ TeletextScreen Footer {
     dock: bottom;
     height: 1;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HOME SCREEN - Retro Terminal Style
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+HomeScreen {
+    background: #000000;
+    align: center middle;
+}
+
+#home-container {
+    width: 100%;
+    height: 100%;
+    align: center middle;
+    background: #000000;
+}
+
+#retro-display {
+    width: auto;
+    height: auto;
+    text-align: center;
+    background: #000000;
+    color: #00ff00;
+    padding: 1 2;
+}
+
+#nick-input {
+    width: 40;
+    height: 3;
+    background: #001100;
+    color: #00ff00;
+    border: solid #00aa00;
+    margin-top: 1;
+}
+
+#nick-input:focus {
+    border: solid #00ff00;
+}
