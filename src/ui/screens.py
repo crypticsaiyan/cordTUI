@@ -20,7 +20,7 @@ class TeletextScreen(Screen):
     def compose(self) -> ComposeResult:
         """Compose the teletext screen."""
         yield Header()
-        yield Static("█████ PAGE 100 █████ CORD-TUI SYSTEM MONITOR █████", classes="teletext-header")
+        yield Static("===== PAGE 100 ===== CORD-TUI SYSTEM MONITOR =====", classes="teletext-header")
         yield Container(
             Static(self._generate_dashboard(), id="dashboard-content"),
             id="teletext-container"
@@ -40,14 +40,15 @@ class TeletextScreen(Screen):
         plt.simple_bar(services, cpu, width=50, title="CPU Usage (%)")
         chart = plt.build()
         
-        # Add retro styling
-        output = "\n[bold cyan]▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀[/]\n"
-        output += "[yellow]SYSTEM STATUS: OPERATIONAL[/]\n"
-        output += "[bold cyan]▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀[/]\n\n"
+        # Add retro styling (no markup, just plain text for stability)
+        output = "\n" + "="*50 + "\n"
+        output += "SYSTEM STATUS: OPERATIONAL\n"
+        output += "="*50 + "\n\n"
         output += chart
-        output += "\n\n[magenta]█ MEMORY: 4.2GB / 16GB[/]"
-        output += "\n[green]█ NETWORK: 125 Mbps ↓ / 45 Mbps ↑[/]"
-        output += "\n[cyan]█ UPTIME: 42 days, 13:37:00[/]"
+        output += "\n\nMEMORY: 4.2GB / 16GB"
+        output += "\nNETWORK: 125 Mbps ↓ / 45 Mbps ↑"
+        output += "\nUPTIME: 42 days, 13:37:00"
+        output += "\n\nPress F1 to return to chat"
         
         return output
     

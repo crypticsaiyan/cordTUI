@@ -4,10 +4,18 @@ from textual.app import ComposeResult
 from textual.containers import Container, Vertical
 from textual.widgets import Static, Tree, ListView, ListItem, Label
 from textual.reactive import reactive
+from textual.message import Message
 
 
 class Sidebar(Container):
     """Left sidebar with channel list."""
+    
+    class ChannelSelected(Message):
+        """Message posted when a channel is selected."""
+        
+        def __init__(self, channel: str):
+            super().__init__()
+            self.channel = channel
     
     def __init__(self, channels: list[str], **kwargs):
         super().__init__(**kwargs)
@@ -28,15 +36,7 @@ class Sidebar(Container):
         """Handle channel selection."""
         if event.node.data:
             self.active_channel = event.node.data
-            self.post_message(ChannelSelected(event.node.data))
-
-
-class ChannelSelected(Static):
-    """Message posted when a channel is selected."""
-    
-    def __init__(self, channel: str):
-        super().__init__()
-        self.channel = channel
+            self.post_message(self.ChannelSelected(event.node.data))
 
 
 class MemberList(Container):

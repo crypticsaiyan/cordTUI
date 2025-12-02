@@ -52,5 +52,8 @@ class IRCClient:
     
     async def disconnect(self):
         """Disconnect from IRC server."""
-        self.client.send('QUIT')
-        await self.client.disconnect()
+        try:
+            self.client.send('QUIT')
+            await self.client.disconnect()
+        except Exception:
+            pass  # Ignore disconnect errors

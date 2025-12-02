@@ -32,6 +32,7 @@ class CordTUI(App):
         super().__init__(**kwargs)
         self.config = self._load_config()
         self.current_channel = "#general"
+        self.irc_connected = False
         
         # Initialize backend components
         server = self.config["servers"][0]
@@ -97,12 +98,23 @@ class CordTUI(App):
     async def _connect_irc(self):
         """Connect to IRC server."""
         try:
+            self.chat_pane.add_message("System", f"Connecting to {self.irc.host}:{self.irc.port}...", is_system=True)
             await self.irc.connect()
+            
+            # Give it a moment to connect
+            await asyncio.sleep(2)
+            
+            # Join channels
             for channel in self.config["servers"][0]["channels"]:
                 self.irc.join_channel(channel)
-            self.chat_pane.add_message("System", "Connected to IRC!", is_system=True)
+                self.chat_pane.add_message("System", f"Joining {channel}...", is_system=True)
+            
+            self.chat_pane.add_message("System", "✓ Connected to IRC! You can now chat.", is_system=True)
+            self.irc_connected = True
         except Exception as e:
-            self.chat_pane.add_message("System", f"IRC connection failed: {e}", is_system=True)
+            self.chat_pane.add_message("System", f"✗ IRC connection failed: {e}", is_system=True)
+            self.chat_pane.add_message("System", "Running in local mode. Messages won't reach others.", is_system=True)
+            self.irc_connected = False
     
     def _on_irc_message(self, nick: str, target: str, message: str):
         """Handle incoming IRC messages."""
@@ -112,6 +124,12 @@ class CordTUI(App):
     def _on_wormhole_status(self, status: str):
         """Handle wormhole status updates."""
         self.call_from_thread(self.chat_pane.add_message, "Wormhole", status, is_system=True)
+    
+    def on_sidebar_channel_selected(self, event: Sidebar.ChannelSelected):
+        """Handle channel selection from sidebar."""
+        self.current_channel = event.channel
+        self.input_bar.placeholder = f"Message {self.current_channel}"
+        self.chat_pane.add_message("System", f"Switched to {self.current_channel}", is_system=True)
     
     async def on_input_submitted(self, event: Input.Submitted):
         """Handle message submission."""
@@ -126,8 +144,15 @@ class CordTUI(App):
             await self._handle_command(message)
         else:
             # Send to IRC
-            self.irc.send_message(self.current_channel, message)
-            self.chat_pane.add_message("You", message)
+            if self.irc_connected:
+                try:
+                    self.irc.send_message(self.current_channel, message)
+                    self.chat_pane.add_message("You", message)
+                except Exception as e:
+                    self.chat_pane.add_message("System", f"Failed to send: {e}", is_system=True)
+            else:
+                self.chat_pane.add_message("You", message)
+                self.chat_pane.add_message("System", "(Local only - not connected to IRC)", is_system=True)
     
     async def _handle_command(self, command: str):
         """Handle slash commands."""
