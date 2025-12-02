@@ -14,6 +14,7 @@ Start here if you're new to the project:
 
 ### For Users
 - **[QUICKSTART.md](QUICKSTART.md)** - How to install and run
+- **[PUBLIC_IRC_GUIDE.md](PUBLIC_IRC_GUIDE.md)** - Connect to public IRC servers
 - **[DEMO_SCRIPT.md](DEMO_SCRIPT.md)** - Presentation guide for demos
 - **[TELETEXT_PAGE_100.md](TELETEXT_PAGE_100.md)** - Teletext dashboard guide
 - **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and solutions
@@ -91,6 +92,9 @@ cord-tui/
 
 **...test the features**
 → [TESTING_CHECKLIST.md](TESTING_CHECKLIST.md)
+
+**...connect to public IRC servers**
+→ [PUBLIC_IRC_GUIDE.md](PUBLIC_IRC_GUIDE.md)
 
 **...compare with other tools**
 → [COMPARISON.md](COMPARISON.md)

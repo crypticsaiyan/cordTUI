@@ -1,12 +1,12 @@
 {
   "servers": [
     {
-      "name": "Default",
+      "name": "Libera.Chat",
       "host": "irc.libera.chat",
       "port": 6667,
       "ssl": false,
       "nick": "cord_user",
-      "channels": ["#general", "#ops", "#incidents"]
+      "channels": ["#testchannel", "#python", "#linux", "#programming"]
     }
   ],
   "theme": {

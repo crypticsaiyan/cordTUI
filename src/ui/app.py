@@ -108,6 +108,10 @@ class CordTUI(App):
         """Initialize the main app after home screen."""
         self.chat_pane = self.query_one("#chat-pane", ChatPane)
         self.input_bar = self.query_one("#input-bar", Input)
+        self.member_list = self.query_one("#member-list", MemberList)
+        
+        # Set initial channel in chat pane
+        self.chat_pane.current_channel = self.current_channel
         
         # Welcome message
         self.chat_pane.add_message("System", f"Welcome to Cord-TUI, {self.irc.nick}! 🚀", is_system=True)
@@ -139,8 +143,16 @@ class CordTUI(App):
     
     def _on_irc_message(self, nick: str, target: str, message: str):
         """Handle incoming IRC messages."""
-        self.call_from_thread(self.chat_pane.add_message, nick, message)
+        # target is the channel the message was sent to
+        # miniirc runs in a separate thread, so we need call_from_thread
+        self.call_from_thread(self.chat_pane.add_message, nick, message, False, target)
         self.audio.process_log(message)
+    
+    def _on_members_update(self, channel: str, members: list[str]):
+        """Handle member list updates."""
+        # Only update if this is the current channel
+        if channel == self.current_channel:
+            self.call_from_thread(self.member_list.update_members, members)
     
     def _on_wormhole_status(self, status: str):
         """Handle wormhole status updates."""
@@ -150,7 +162,14 @@ class CordTUI(App):
         """Handle channel selection from sidebar."""
         self.current_channel = event.channel
         self.input_bar.placeholder = f"Message {self.current_channel}"
+        
+        # Switch chat pane to show this channel's messages
+        self.chat_pane.switch_channel(self.current_channel)
         self.chat_pane.add_message("System", f"Switched to {self.current_channel}", is_system=True)
+        
+        # Update member list for new channel
+        members = self.irc.get_channel_members(self.current_channel)
+        self.member_list.update_members(members)
     
     async def on_input_submitted(self, event: Input.Submitted):
         """Handle message submission."""
@@ -172,11 +191,12 @@ class CordTUI(App):
             if self.irc_connected:
                 try:
                     self.irc.send_message(self.current_channel, message)
-                    self.chat_pane.add_message("You", message)
+                    # Add to current channel's history
+                    self.chat_pane.add_message("You", message, False, self.current_channel)
                 except Exception as e:
                     self.chat_pane.add_message("System", f"Failed to send: {e}", is_system=True)
             else:
-                self.chat_pane.add_message("You", message)
+                self.chat_pane.add_message("You", message, False, self.current_channel)
                 self.chat_pane.add_message("System", "(Local only - not connected to IRC)", is_system=True)
     
     async def _handle_command(self, command: str):

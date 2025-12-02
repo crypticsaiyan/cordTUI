@@ -9,21 +9,48 @@ from textual.reactive import reactive
 class ChatPane(VerticalScroll):
     """The main chat message stream."""
     
-    messages = reactive([])
-    
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.messages = []
+        # Store messages per channel: {channel: [(author, content, is_system), ...]}
+        self.channel_messages = {}
+        self.current_channel = None
     
-    def add_message(self, author: str, content: str, is_system: bool = False):
+    def add_message(self, author: str, content: str, is_system: bool = False, channel: str = None):
         """Add a message to the chat."""
-        if is_system:
-            msg_widget = Static(f"[italic yellow]⚙ {content}[/]", classes="system-message")
-        else:
-            msg_widget = Markdown(f"**{author}**: {content}")
-            msg_widget.add_class("message")
+        # Store message in history
+        if channel:
+            if channel not in self.channel_messages:
+                self.channel_messages[channel] = []
+            self.channel_messages[channel].append((author, content, is_system))
         
-        self.mount(msg_widget)
+        # Only display if it's for the current channel or no channel specified (system messages)
+        if channel is None or channel == self.current_channel:
+            if is_system:
+                msg_widget = Static(f"[italic yellow]⚙ {content}[/]", classes="system-message")
+            else:
+                msg_widget = Markdown(f"**{author}**: {content}")
+                msg_widget.add_class("message")
+            
+            self.mount(msg_widget)
+            self.scroll_end(animate=False)
+    
+    def switch_channel(self, channel: str):
+        """Switch to a different channel and restore its message history."""
+        self.current_channel = channel
+        
+        # Clear current display
+        self.remove_children()
+        
+        # Restore messages for this channel
+        if channel in self.channel_messages:
+            for author, content, is_system in self.channel_messages[channel]:
+                if is_system:
+                    msg_widget = Static(f"[italic yellow]⚙ {content}[/]", classes="system-message")
+                else:
+                    msg_widget = Markdown(f"**{author}**: {content}")
+                    msg_widget.add_class("message")
+                self.mount(msg_widget)
+        
         self.scroll_end(animate=False)
     
     def add_embed(self, title: str, content: str, embed_type: str = "info"):
