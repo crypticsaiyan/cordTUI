@@ -45,18 +45,26 @@ class MemberList(Container):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.members = []
+        self.member_list_view = None
     
     def compose(self) -> ComposeResult:
         """Compose the member list."""
         with Vertical():
-            yield Static("👥 Members", classes="member-header")
-            yield ListView(
-                ListItem(Label("● alice", classes="member-online")),
-                ListItem(Label("● bob", classes="member-online")),
-                ListItem(Label("○ charlie", classes="member-offline")),
-            )
+            yield Static("👥 Members (0)", classes="member-header", id="member-count")
+            self.member_list_view = ListView(id="member-list-view")
+            yield self.member_list_view
     
-    def update_members(self, online: list[str], offline: list[str]):
-        """Update the member list."""
-        # TODO: Implement dynamic member updates
-        pass
+    def update_members(self, members: list[str]):
+        """Update the member list with current channel members."""
+        self.members = sorted(members)
+        
+        # Update count header
+        count_widget = self.query_one("#member-count", Static)
+        count_widget.update(f"👥 Members ({len(self.members)})")
+        
+        # Clear and rebuild list
+        if self.member_list_view:
+            self.member_list_view.clear()
+            for member in self.members:
+                item = ListItem(Label(f"● {member}", classes="member-online"))
+                self.member_list_view.append(item)

@@ -14,16 +14,23 @@ A resurrection of IRC with Discord's user experience, running in a high-performa
 python -m src.main
 
 # Try it
-# - Type messages
+# - Chat in real IRC channels (#python, #linux, #programming)
+# - See live member lists in the sidebar
 # - Press F1 for Teletext dashboard
 # - Type /ai docker-stats
 # - Type /send demo.txt
+
+# Test IRC connection
+python test_public_irc.py
 ```
 
 ## ✨ Features
 
 ### 🎨 Discord-Like Interface
 Beautiful 3-pane layout with channels, chat, and members. Markdown support, syntax highlighting, and rich embeds.
+
+### 🌐 Public IRC Server Support
+Connect to Libera.Chat or any public IRC server. Join channels, chat with real users, and see live member lists. Pre-configured with popular channels like #python, #linux, and #programming.
 
 ### 📺 Teletext Dashboard (F1)
 Retro 1980s Ceefax-style observability dashboard with live metrics. Zero latency, no browser required.
