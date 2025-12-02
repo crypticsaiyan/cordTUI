@@ -25,8 +25,17 @@ python -m src.main
 ### 🎨 Discord-Like Interface
 Beautiful 3-pane layout with channels, chat, and members. Markdown support, syntax highlighting, and rich embeds.
 
-### 📺 Teletext Dashboard (F1)
-Retro 1980s Ceefax-style observability dashboard with live metrics. Zero latency, no browser required.
+### 📺 Teletext Dashboard (F1) - Page 100
+Authentic 1980s Ceefax/Oracle aesthetic with modern DevOps data. Features:
+- Ticking clock (seconds update in real-time)
+- ASCII CPU/Memory graphs using `psutil`
+- Container status matrix with colored blocks
+- Git commits as "Breaking News" headlines
+- Scrolling ticker tape with error logs
+- Strict 8-color palette (Black, White, Red, Green, Blue, Cyan, Magenta, Yellow)
+- Block graphics (█ ▀ ▄ ░) for authentic retro feel
+
+See [TELETEXT_PAGE_100.md](TELETEXT_PAGE_100.md) for full details.
 
 ### 🔐 Wormhole File Transfer
 Peer-to-peer encrypted file transfers with human-readable codes. No cloud, no traces, just magic.
@@ -87,11 +96,14 @@ This project resurrects three "dead" technologies with modern improvements:
 ## 🎬 Demo
 
 ```bash
-# Run the demo simulation
+# Run the full app with Teletext dashboard
+./demo_teletext.sh
+
+# Or run the error simulation (Geiger counter audio)
 python demo.py
 ```
 
-This simulates a server dying with increasing error rates, perfect for showcasing the Geiger counter audio feature.
+The Teletext demo shows off the authentic 1980s dashboard. The error simulation showcases the Geiger counter audio feature with increasing error rates.
 
 ## 📁 Project Structure
 

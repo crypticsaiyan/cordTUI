@@ -47,7 +47,19 @@ cord-tui/
 
 ## 🎯 The Three Resurrections
 
-### 1. Teletext (1980s TV Pages) → Dashboard
+### 1. Teletext (1980s TV Pages) → Dashboard (Press F1!)
+
+**The Star Feature**: Authentic BBC Ceefax/Oracle Teletext dashboard (Page 100)
+
+- Ticking clock (seconds update in real-time)
+- ASCII CPU/Memory graphs
+- Container status matrix with colored blocks
+- Git commits as "Breaking News" headlines
+- Scrolling ticker tape with error logs
+- Authentic 8-color palette (Black, White, Red, Green, Blue, Cyan, Magenta, Yellow)
+- Block graphics (█ ▀ ▄ ░) for retro feel
+
+**See**: [TELETEXT_PAGE_100.md](TELETEXT_PAGE_100.md) for full details
 **Press F1** to see a retro Ceefax-style dashboard with live metrics.
 
 ### 2. DCC (IRC File Transfer) → Wormhole

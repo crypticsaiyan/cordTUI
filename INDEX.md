@@ -15,6 +15,7 @@ Start here if you're new to the project:
 ### For Users
 - **[QUICKSTART.md](QUICKSTART.md)** - How to install and run
 - **[DEMO_SCRIPT.md](DEMO_SCRIPT.md)** - Presentation guide for demos
+- **[TELETEXT_PAGE_100.md](TELETEXT_PAGE_100.md)** - Teletext dashboard guide
 - **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and solutions
 
 ### For Developers
@@ -104,10 +105,11 @@ Beautiful 3-pane layout with channels, chat, and members.
 - **Code**: `src/ui/app.py`, `src/ui/styles.tcss`
 - **Docs**: [ARCHITECTURE.md](ARCHITECTURE.md#ui-layer)
 
-### 2. Teletext Dashboard (F1)
-Retro 1980s-style observability dashboard.
+### 2. Teletext Dashboard (F1) - Page 100
+Authentic 1980s Ceefax/Oracle aesthetic with modern DevOps data.
 - **Code**: `src/ui/screens.py`
-- **Docs**: [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md#1-teletext-dashboard-f1)
+- **Docs**: [TELETEXT_PAGE_100.md](TELETEXT_PAGE_100.md)
+- **Preview**: [assets/teletext_preview.txt](assets/teletext_preview.txt)
 
 ### 3. Wormhole File Transfer
 Peer-to-peer encrypted file transfers.
@@ -133,10 +135,11 @@ AI-powered commands via Model Context Protocol.
 4. TROUBLESHOOTING.md - If you hit issues
 
 ### For Hackathon Judges
-1. PROJECT_SUMMARY.md - Complete overview
-2. COMPARISON.md - Why it's innovative
-3. ARCHITECTURE.md - Technical execution
-4. Watch the demo or read DEMO_SCRIPT.md
+1. **TELETEXT_JUDGES_GUIDE.md** - Why the Teletext dashboard wins
+2. PROJECT_SUMMARY.md - Complete overview
+3. COMPARISON.md - Why it's innovative
+4. ARCHITECTURE.md - Technical execution
+5. Watch the demo or read DEMO_SCRIPT.md
 
 ### For Developers
 1. ARCHITECTURE.md - Understand the design

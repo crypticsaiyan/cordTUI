@@ -5,3 +5,4 @@ simpleaudio>=1.0.4
 rich>=13.7.0
 plotext>=5.2.8
 aiofiles>=23.2.1
+psutil>=5.9.0

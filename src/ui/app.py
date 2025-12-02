@@ -195,7 +195,7 @@ class CordTUI(App):
     
     def action_toggle_teletext(self):
         """Toggle the Teletext dashboard."""
-        self.push_screen(TeletextScreen(self.mcp))
+        self.push_screen(TeletextScreen(app_ref=self))
     
     async def on_unmount(self):
         """Clean up on exit."""
