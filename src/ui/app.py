@@ -229,6 +229,9 @@ class CordTUI(App):
             
             if "error" in result:
                 self.chat_pane.add_embed("AI Error", result["error"], "error")
+            elif "message" in result:
+                # Plain text message (like help text)
+                self.chat_pane.add_embed("AI Assistant", result["message"], "info")
             else:
                 # Format result as JSON
                 import json
