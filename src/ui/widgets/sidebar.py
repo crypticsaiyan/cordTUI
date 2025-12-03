@@ -25,7 +25,7 @@ class Sidebar(Container):
     def compose(self) -> ComposeResult:
         """Compose the sidebar."""
         with Vertical():
-            yield Static("📡 CORD-TUI", classes="server-name")
+            yield Static("CORD-TUI", classes="server-name")
             tree = Tree("Channels")
             tree.root.expand()
             for channel in self.channels:
@@ -50,7 +50,7 @@ class MemberList(Container):
     def compose(self) -> ComposeResult:
         """Compose the member list."""
         with Vertical():
-            yield Static("👥 Members (0)", classes="member-header", id="member-count")
+            yield Static("Members (0)", classes="member-header", id="member-count")
             self.member_list_view = ListView(id="member-list-view")
             yield self.member_list_view
     
@@ -60,11 +60,21 @@ class MemberList(Container):
         
         # Update count header
         count_widget = self.query_one("#member-count", Static)
-        count_widget.update(f"👥 Members ({len(self.members)})")
+        count_widget.update(f"Members ({len(self.members)})")
         
         # Clear and rebuild list
         if self.member_list_view:
             self.member_list_view.clear()
             for member in self.members:
-                item = ListItem(Label(f"● {member}", classes="member-online"))
+                item = ListItem(Label(f"• {member}", classes="member-online"))
                 self.member_list_view.append(item)
+    
+    def show_loading(self, channel: str):
+        """Show loading state for member list."""
+        count_widget = self.query_one("#member-count", Static)
+        count_widget.update(f"Loading {channel}...")
+        
+        if self.member_list_view:
+            self.member_list_view.clear()
+            item = ListItem(Label("Loading members...", classes="member-loading"))
+            self.member_list_view.append(item)

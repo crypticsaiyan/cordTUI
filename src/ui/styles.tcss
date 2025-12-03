@@ -174,3 +174,128 @@ HomeScreen {
 #nick-input:focus {
     border: solid #00ff00;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CHANNEL SEARCH DIALOG
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+#channel-search-dialog {
+    width: 70;
+    height: 35;
+    background: #36393f;
+    border: solid #5865F2;
+    padding: 2;
+    margin: 2;
+}
+
+.dialog-title {
+    text-align: center;
+    color: #ffffff;
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+.section-header {
+    color: #8e9297;
+    margin: 1 0;
+}
+
+#channel-search-input {
+    width: 100%;
+    margin-bottom: 1;
+}
+
+#channel-list {
+    height: 15;
+    border: solid #202225;
+    background: #2f3136;
+}
+
+.channel-item {
+    color: #dcddde;
+    padding: 0 1;
+}
+
+.channel-item:hover {
+    background: #393c43;
+}
+
+Button {
+    margin: 0 1;
+    height: 3;
+    min-width: 10;
+    background: #40444b;
+    color: #dcddde;
+    border: solid #202225;
+}
+
+Button:hover {
+    background: #5865F2;
+    color: #ffffff;
+}
+
+Button.primary {
+    background: #5865F2;
+    color: #ffffff;
+    border: solid #5865F2;
+}
+
+Button.success {
+    background: #43b581;
+    color: #ffffff;
+    border: solid #43b581;
+}
+
+Button.warning {
+    background: #faa61a;
+    color: #ffffff;
+    border: solid #faa61a;
+}
+
+#channel-search-dialog Button {
+    margin: 1;
+    height: 3;
+    min-width: 12;
+    color: #ffffff;
+    text-align: center;
+}
+
+#channel-search-dialog Horizontal {
+    height: auto;
+    margin: 1 0;
+}
+
+#channel-search-dialog .dialog-title {
+    height: 3;
+    margin: 1 0;
+}
+
+#channel-search-dialog .section-header {
+    height: 2;
+    margin: 1 0;
+}
+
+#suggestions-list {
+    height: 8;
+    border: solid #202225;
+    background: #2f3136;
+    margin-bottom: 1;
+}
+
+.suggestion-item {
+    color: #faa61a;
+    padding: 0 1;
+    text-style: italic;
+}
+
+.suggestion-item:hover {
+    background: #393c43;
+    color: #ffffff;
+    text-style: bold;
+}
+
+.info-item {
+    color: #8e9297;
+    text-style: italic;
+    padding: 0 1;
+}
