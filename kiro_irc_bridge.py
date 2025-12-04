@@ -134,20 +134,33 @@ class KiroIRCBridge:
     
     def _build_prompt(self, user: str, channel: str, prompt: str) -> str:
         """Build a full prompt with context for Kiro."""
-        context = f"""You are a DevOps AI assistant in IRC channel {channel}.
-User {user} asked: {prompt}
+        # If prompt is empty or very generic, default to health check
+        if not prompt or prompt.lower() in ["help", "status", "check"]:
+            prompt = "check docker health"
+        
+        context = f"""DevOps Health Bot - IRC Channel: {channel}
+User: {user}
+Query: {prompt}
 
-Use MCP tools to investigate and provide a concise summary:
-- @filesystem: Read logs from /var/log/
-- @postgres: Query production database (READ ONLY)
-- @docker: Check container status
+You are an automated DevOps assistant. Your PRIMARY task is to check Docker container health.
+
+When invoked:
+1. Automatically discover and inspect Docker containers
+2. Assess their health status (running, healthy, restart counts, etc.)
+3. Report a concise summary suitable for IRC
+
+Use the /ai command which will:
+- Default to docker health checks for most queries
+- Parse environment hints (prod, staging, dev)
+- Parse service hints (web, api, db, worker)
+- Return formatted health reports
 
 IMPORTANT:
 - Be concise (IRC has line limits)
-- Use bullet points for clarity
-- Suggest actionable next steps
+- Use emojis for quick status (✅ 🟡 ❌)
+- Suggest actionable next steps only if issues found
 - NEVER run destructive commands
-- If unsure, ask for confirmation
+- Read-only operations only
 
 Respond in plain text suitable for IRC."""
         

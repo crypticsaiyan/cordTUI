@@ -85,7 +85,27 @@ This project resurrects three "dead" technologies with modern improvements:
 | `F1` | Toggle Teletext Dashboard |
 | `/send <file>` | Send file via wormhole |
 | `/grab <code>` | Receive file via wormhole |
-| `/ai <command>` | Execute AI command via MCP |
+| `/ai [query]` | DevOps Health Bot - Check Docker containers |
+
+## 🤖 DevOps Health Bot
+
+Cord-TUI includes an AI-powered DevOps assistant that automatically monitors Docker container health:
+
+```bash
+# In the TUI or via IRC:
+/ai                    # Check all containers
+/ai prod               # Check production
+/ai staging web        # Check staging web service
+```
+
+**Features:**
+- 🏥 Automatic health assessment (healthy, warning, critical)
+- 🔍 Smart filtering by environment (prod, staging) and service (web, api, db)
+- 📊 Monitors status, health checks, restarts, CPU, memory
+- 💬 IRC-friendly output with emojis and actionable recommendations
+- 🔒 Read-only, safe operations
+
+See [DEVOPS_HEALTH_BOT.md](DEVOPS_HEALTH_BOT.md) for full documentation.
 
 ## 🛠️ Tech Stack
 
@@ -95,7 +115,7 @@ This project resurrects three "dead" technologies with modern improvements:
 - **magic-wormhole** - P2P file transfers
 - **simpleaudio** - Audio feedback
 - **plotext** - ASCII charts
-- **MCP** - AI integration
+- **MCP** - AI integration with Docker monitoring
 
 ## 🎬 Demo
 

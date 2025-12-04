@@ -6,6 +6,8 @@ import subprocess
 from pathlib import Path
 from typing import Dict, Any
 
+from src.core.devops_health_bot import DevOpsHealthBot
+
 
 class MCPClient:
     """Client for executing MCP commands."""
@@ -14,39 +16,31 @@ class MCPClient:
         self.tools = {
             "analyze-db": self._analyze_db,
             "docker-stats": self._docker_stats,
+            "docker-health": self._docker_health,
             "system-info": self._system_info,
             "list-files": self._list_files,
             "read-file": self._read_file,
             "search-files": self._search_files,
         }
+        
+        # Initialize DevOps Health Bot
+        self.health_bot = DevOpsHealthBot(mcp_tools={})
     
     async def execute(self, prompt: str, args: Dict[str, Any] = None) -> Dict[str, Any]:
         """Execute an MCP command based on natural language prompt."""
         # Parse the prompt to determine which tool to use
         prompt_lower = prompt.lower().strip()
         
-        # If empty prompt, show help
-        if not prompt_lower:
-            help_text = """Available AI commands:
-
-**System & Docker:**
-• docker-stats - Show Docker container statistics
-• system-info - Display system information
-• analyze-db - Analyze database health
-
-**Filesystem (MCP):**
-• list-files [path] - List files in directory
-• read-file <path> - Read file contents
-• search-files <pattern> - Search for files
-
-Examples:
-• /ai docker-stats
-• /ai list-files src
-• /ai read-file README.md"""
-            return {"message": help_text}
+        # If empty prompt or generic health check, default to docker health
+        if not prompt_lower or prompt_lower in ["health", "check", "status"]:
+            # Default behavior: check Docker health
+            return await self._docker_health({"prompt": prompt_lower})
         
         # Match prompt to tools
-        if "docker" in prompt_lower or "container" in prompt_lower:
+        # Priority: Docker health checks for most queries
+        if any(keyword in prompt_lower for keyword in ["docker", "container", "health", "check", "status", "prod", "staging"]):
+            tool = "docker-health"
+        elif "stats" in prompt_lower and "docker" in prompt_lower:
             tool = "docker-stats"
         elif "system" in prompt_lower or "uname" in prompt_lower or "os" in prompt_lower:
             tool = "system-info"
@@ -58,13 +52,15 @@ Examples:
             tool = "read-file"
         elif "search" in prompt_lower or "find" in prompt_lower:
             tool = "search-files"
+        elif "help" in prompt_lower:
+            return {"message": self._get_help_text()}
         else:
-            # Try exact match
-            tool = prompt_lower.split()[0] if prompt_lower else ""
+            # Default to docker health for ambiguous queries
+            tool = "docker-health"
         
         if tool not in self.tools:
             return {
-                "error": f"I don't understand '{prompt}'. Try: docker-stats, system-info, list-files, read-file, or search-files"
+                "error": f"I don't understand '{prompt}'. Try: /ai help"
             }
         
         try:
@@ -72,7 +68,10 @@ Examples:
             prompt_args = prompt.split(maxsplit=1)
             if len(prompt_args) > 1:
                 args = args or {}
-                args["path"] = prompt_args[1].strip()
+                args["prompt"] = prompt_args[1].strip()
+            else:
+                args = args or {}
+                args["prompt"] = prompt_lower
             
             result = await self.tools[tool](args or {})
             # Add a friendly message
@@ -82,6 +81,27 @@ Examples:
         except Exception as e:
             return {"error": str(e)}
     
+    def _get_help_text(self) -> str:
+        """Get help text for available commands."""
+        return """🤖 DevOps Health Bot - Available Commands:
+
+**Docker Health (Default):**
+• /ai - Check all Docker containers
+• /ai prod - Check production containers
+• /ai staging web - Check staging web containers
+• /ai docker health - Full health report
+
+**Other Tools:**
+• /ai docker-stats - Raw Docker statistics
+• /ai system-info - System information
+• /ai list-files [path] - List directory contents
+• /ai read-file <path> - Read file contents
+
+**Examples:**
+• /ai
+• /ai prod api
+• /ai check docker health"""
+    
     async def _analyze_db(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze database (dummy implementation)."""
         return {
@@ -90,6 +110,15 @@ Examples:
             "connections": 15,
             "query_time_avg": "23ms"
         }
+    
+    async def _docker_health(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        """Check Docker container health using DevOps Health Bot."""
+        user_prompt = args.get("prompt", "")
+        try:
+            health_report = await self.health_bot.check_health(user_prompt)
+            return {"message": health_report}
+        except Exception as e:
+            return {"error": f"Health check failed: {str(e)}"}
     
     async def _docker_stats(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Get Docker container stats."""
@@ -104,6 +133,8 @@ Examples:
                 lines = result.stdout.strip().split('\n')
                 stats = [json.loads(line) for line in lines if line]
                 return {"containers": stats}
+            elif "permission denied" in result.stderr.lower():
+                return {"error": "Docker permission denied. See FIX_DOCKER_PERMISSIONS.md"}
             return {"error": "Docker not available"}
         except (subprocess.TimeoutExpired, FileNotFoundError):
             return {"error": "Docker not available"}

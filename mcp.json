@@ -1,3 +1,17 @@
 {
-    "mcpServers": {}
+    "mcpServers": {
+        "docker": {
+            "command": "uvx",
+            "args": [
+                "mcp-server-docker"
+            ],
+            "env": {},
+            "disabled": false,
+            "autoApprove": [
+                "list_containers",
+                "inspect_container",
+                "get_container_stats"
+            ]
+        }
+    }
 }
