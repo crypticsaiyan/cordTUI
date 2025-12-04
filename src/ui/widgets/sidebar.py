@@ -17,9 +17,10 @@ class Sidebar(Container):
             super().__init__()
             self.channel = channel
     
-    def __init__(self, channels: list[str], **kwargs):
+    def __init__(self, channels: list[str], bookmarked_channels: list[str] = None, **kwargs):
         super().__init__(**kwargs)
         self.channels = channels
+        self.bookmarked_channels = bookmarked_channels or []
         self.active_channel = None
     
     def compose(self) -> ComposeResult:
@@ -28,8 +29,17 @@ class Sidebar(Container):
             yield Static("CORD-TUI", classes="server-name")
             tree = Tree("Channels")
             tree.root.expand()
+            
+            # Add bookmarked channels first with a star
+            if self.bookmarked_channels:
+                for channel in self.bookmarked_channels:
+                    tree.root.add_leaf(f"⭐ {channel}", data=channel)
+            
+            # Add regular channels
             for channel in self.channels:
-                tree.root.add_leaf(f"# {channel}", data=channel)
+                if channel not in self.bookmarked_channels:
+                    tree.root.add_leaf(channel, data=channel)
+            
             yield tree
     
     def on_tree_node_selected(self, event: Tree.NodeSelected):
@@ -41,10 +51,34 @@ class Sidebar(Container):
     def update_channels(self, channels: list[str]):
         """Update the channel list with new channels."""
         self.channels = channels
+        self._refresh_tree()
+    
+    def add_bookmark(self, channel: str):
+        """Add a channel to bookmarks."""
+        if channel not in self.bookmarked_channels:
+            self.bookmarked_channels.append(channel)
+            self._refresh_tree()
+    
+    def remove_bookmark(self, channel: str):
+        """Remove a channel from bookmarks."""
+        if channel in self.bookmarked_channels:
+            self.bookmarked_channels.remove(channel)
+            self._refresh_tree()
+    
+    def _refresh_tree(self):
+        """Refresh the channel tree display."""
         tree = self.query_one(Tree)
         tree.root.remove_children()
+        
+        # Add bookmarked channels first with a star
+        if self.bookmarked_channels:
+            for channel in self.bookmarked_channels:
+                tree.root.add_leaf(f"⭐ {channel}", data=channel)
+        
+        # Add regular channels
         for channel in self.channels:
-            tree.root.add_leaf(f"# {channel}", data=channel)
+            if channel not in self.bookmarked_channels:
+                tree.root.add_leaf(channel, data=channel)
 
 
 class MemberList(Container):

@@ -44,12 +44,14 @@ class CordTUI(App):
     BINDINGS = [
         Binding("f1", "toggle_teletext", "Teletext", show=True),
         Binding("ctrl+j", "search_channels", "Join Channel", show=True),
+        Binding("ctrl+b", "toggle_bookmark", "Bookmark", show=True),
         Binding("ctrl+c", "quit", "Quit", show=True),
     ]
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.config = self._load_config()
+        self.bookmarks = self._load_bookmarks()
         self.current_channel = "#general"
         self.irc_connected = False
         self.connection_status = "disconnected"  # disconnected, connecting, connected
@@ -72,6 +74,29 @@ class CordTUI(App):
                 return json.load(f)
         return {}
     
+    def _load_bookmarks(self) -> list[str]:
+        """Load bookmarked channels from .cord/bookmarks.json."""
+        bookmarks_path = Path(".cord/bookmarks.json")
+        if bookmarks_path.exists():
+            try:
+                with open(bookmarks_path) as f:
+                    data = json.load(f)
+                    return data.get("channels", [])
+            except Exception:
+                return []
+        return []
+    
+    def _save_bookmarks(self):
+        """Save bookmarked channels to .cord/bookmarks.json."""
+        bookmarks_path = Path(".cord/bookmarks.json")
+        bookmarks_path.parent.mkdir(exist_ok=True)
+        try:
+            with open(bookmarks_path, 'w') as f:
+                json.dump({"channels": self.bookmarks}, f, indent=2)
+        except Exception as e:
+            if self.chat_pane:
+                self.chat_pane.add_message("System", f"Failed to save bookmarks: {e}", is_system=True)
+    
     def compose(self) -> ComposeResult:
         """Compose the main UI layout."""
         yield Header()
@@ -79,7 +104,7 @@ class CordTUI(App):
         with Horizontal():
             # Left sidebar - channels (will be updated after server selection)
             default_channels = self.config.get("servers", [{}])[0].get("channels", [])
-            yield Sidebar(default_channels, id="sidebar")
+            yield Sidebar(default_channels, bookmarked_channels=self.bookmarks, id="sidebar")
             
             # Center - chat pane
             with Container(id="chat-container"):
@@ -137,9 +162,10 @@ class CordTUI(App):
         self.input_bar = self.query_one("#input-bar", Input)
         self.member_list = self.query_one("#member-list", MemberList)
         
-        # Update sidebar with selected server's channels
+        # Update sidebar with selected server's channels and bookmarks
         sidebar = self.query_one("#sidebar", Sidebar)
         server_channels = self.selected_server.get("channels", [])
+        sidebar.bookmarked_channels = self.bookmarks
         sidebar.update_channels(server_channels)
         
         # Set initial channel from server config
@@ -170,10 +196,16 @@ class CordTUI(App):
             # Check internet connectivity first
             try:
                 import socket
-                socket.create_connection((self.irc.host, self.irc.port), timeout=5)
-            except (socket.error, OSError):
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(5)
+                sock.connect((self.irc.host, self.irc.port))
+                sock.close()
+                self.chat_pane.add_message("System", "✓ Network connectivity verified", is_system=True)
+            except (socket.error, OSError, socket.timeout) as e:
+                self.chat_pane.add_message("System", f"❌ Cannot reach {self.irc.host}:{self.irc.port}", is_system=True)
                 self.chat_pane.add_message("System", "Device appears to be offline. Check internet connection.", is_system=True)
                 self.connection_status = "offline"
+                self.input_bar.placeholder = "Offline - Check connection"
                 return
             
             await self.irc.connect()
@@ -410,9 +442,48 @@ class CordTUI(App):
                 self.input_bar.placeholder = f"Message {self.current_channel}"
                 self.member_list.show_loading(channel)
         
+        elif cmd == "bookmark":
+            # Bookmark current or specified channel
+            channel = args.strip() if args else self.current_channel
+            if not channel.startswith('#'):
+                channel = '#' + channel
+            
+            if channel in self.bookmarks:
+                self.chat_pane.add_message("System", f"{channel} is already bookmarked", is_system=True)
+            else:
+                self.bookmarks.append(channel)
+                sidebar = self.query_one("#sidebar", Sidebar)
+                sidebar.add_bookmark(channel)
+                self._save_bookmarks()
+                self.chat_pane.add_message("System", f"⭐ Bookmarked {channel}", is_system=True)
+        
+        elif cmd == "unbookmark":
+            # Remove bookmark from current or specified channel
+            channel = args.strip() if args else self.current_channel
+            if not channel.startswith('#'):
+                channel = '#' + channel
+            
+            if channel not in self.bookmarks:
+                self.chat_pane.add_message("System", f"{channel} is not bookmarked", is_system=True)
+            else:
+                self.bookmarks.remove(channel)
+                sidebar = self.query_one("#sidebar", Sidebar)
+                sidebar.remove_bookmark(channel)
+                self._save_bookmarks()
+                self.chat_pane.add_message("System", f"Removed bookmark from {channel}", is_system=True)
+        
+        elif cmd == "bookmarks":
+            # List all bookmarks
+            if not self.bookmarks:
+                self.chat_pane.add_message("System", "No bookmarked channels", is_system=True)
+            else:
+                self.chat_pane.add_message("System", f"Bookmarked channels ({len(self.bookmarks)}):", is_system=True)
+                for channel in self.bookmarks:
+                    self.chat_pane.add_message("System", f"  ⭐ {channel}", is_system=True)
+        
         else:
             self.chat_pane.add_message("System", f"Unknown command: /{cmd}", is_system=True)
-            self.chat_pane.add_message("System", "Available commands: /join, /send, /grab, /ai", is_system=True)
+            self.chat_pane.add_message("System", "Available commands: /join, /bookmark, /unbookmark, /bookmarks, /send, /grab, /ai", is_system=True)
     
     def action_toggle_teletext(self):
         """Toggle the Teletext dashboard."""
@@ -432,6 +503,30 @@ class CordTUI(App):
         self._channel_search_screen.recent_channels.update(recent_channels)
         
         self.push_screen(self._channel_search_screen)
+    
+    def action_toggle_bookmark(self):
+        """Toggle bookmark for current channel."""
+        if not self.current_channel or not self.current_channel.startswith('#'):
+            if self.chat_pane:
+                self.chat_pane.add_message("System", "Not in a channel. Select a channel first.", is_system=True)
+            return
+        
+        sidebar = self.query_one("#sidebar", Sidebar)
+        
+        if self.current_channel in self.bookmarks:
+            # Remove bookmark
+            self.bookmarks.remove(self.current_channel)
+            sidebar.remove_bookmark(self.current_channel)
+            self._save_bookmarks()
+            if self.chat_pane:
+                self.chat_pane.add_message("System", f"Removed bookmark from {self.current_channel}", is_system=True)
+        else:
+            # Add bookmark
+            self.bookmarks.append(self.current_channel)
+            sidebar.add_bookmark(self.current_channel)
+            self._save_bookmarks()
+            if self.chat_pane:
+                self.chat_pane.add_message("System", f"⭐ Bookmarked {self.current_channel}", is_system=True)
     
     def request_channel_list(self, pattern: str = None):
         """Request channel list from IRC server."""
@@ -482,5 +577,6 @@ class CordTUI(App):
     
     async def on_unmount(self):
         """Clean up on exit."""
+        self._save_bookmarks()
         if self.irc:
             await self.irc.disconnect()
