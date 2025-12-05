@@ -165,6 +165,7 @@ class CordTUI(App):
         self.irc.set_members_callback(self._on_members_update)
         self.irc.set_channel_list_callback(self._on_channel_list_received)
         self.irc.set_join_callback(self._on_channel_joined)
+        self.irc.set_nick_callback(self._on_nick_update)
         
         # Initialize audio with chosen settings
         self.audio = AudioEngine(
@@ -204,8 +205,8 @@ class CordTUI(App):
         
         # Welcome message
         server_name = self.selected_server.get("name", self.selected_server.get("host"))
-        self.chat_pane.add_message("System", f"Welcome to Cord-TUI, {self.irc.nick}! 🚀", is_system=True)
-        self.chat_pane.add_message("System", f"Connecting to {server_name}...", is_system=True)
+        self.chat_pane.add_message("System", f"Welcome to Cord-TUI! 🚀", is_system=True)
+        self.chat_pane.add_message("System", f"Connecting to {server_name} as {self.irc.nick}...", is_system=True)
         self.chat_pane.add_message("System", "Press F1 for Teletext Dashboard", is_system=True)
         
         # Connect to IRC in background
@@ -248,11 +249,37 @@ class CordTUI(App):
                 self.input_bar.placeholder = "Connection failed - restart app"
                 return
             
+            self.chat_pane.add_message("System", "✓ Connected! Confirming nickname...", is_system=True)
+            
+            # Wait for nickname confirmation before joining channels
+            # The server will send 001 (RPL_WELCOME) when nick is confirmed
+            # or 433 (ERR_NICKNAMEINUSE) if taken, which triggers auto-retry
+            max_nick_wait = 15  # Maximum 15 seconds for nick negotiation
+            nick_waited = 0
+            while nick_waited < max_nick_wait:
+                if self.irc.is_nick_confirmed():
+                    break
+                await asyncio.sleep(0.3)
+                nick_waited += 0.3
+            
+            if not self.irc.is_nick_confirmed():
+                self.chat_pane.add_message("System", "❌ Nickname negotiation timed out", is_system=True)
+                self.connection_status = "failed"
+                self.input_bar.placeholder = "Connection failed - restart app"
+                return
+            
             self.connection_status = "connected"
             self.irc_connected = True
-            self.chat_pane.add_message("System", "✓ Connected to IRC!", is_system=True)
             
-            # Join all channels at once (IRC handles them in parallel)
+            # Update UI with confirmed nick (may have changed due to conflict)
+            confirmed_nick = self.irc.get_confirmed_nick()
+            self.chat_pane.current_nick = confirmed_nick
+            if self.member_list:
+                self.member_list.set_current_nick(confirmed_nick)
+            
+            self.chat_pane.add_message("System", f"✓ Ready as {confirmed_nick}!", is_system=True)
+            
+            # Now join all channels with confirmed nickname
             server_channels = self.selected_server.get("channels", [])
             for channel in server_channels:
                 self.channels_joining.add(channel)
@@ -281,7 +308,7 @@ class CordTUI(App):
         # miniirc runs in a separate thread, so we need call_from_thread
         
         # Check if this is a private message (target is our nick, not a channel)
-        if target == self.irc.nick:
+        if target == self.irc.get_confirmed_nick():
             # This is a DM from 'nick' to us
             self.call_from_thread(self._handle_dm_received, nick, message)
         else:
@@ -310,6 +337,28 @@ class CordTUI(App):
         """Handle member list updates."""
         if channel == self.current_channel:
             self.call_from_thread(self._update_member_list_ui, members)
+    
+    def _on_nick_update(self, nick: str, success: bool, message: str):
+        """Handle nickname confirmation/change from IRC server."""
+        self.call_from_thread(self._handle_nick_update, nick, success, message)
+    
+    def _handle_nick_update(self, nick: str, success: bool, message: str):
+        """Handle nickname update - called from main thread."""
+        if success and nick:
+            original_nick = self.irc.original_nick
+            
+            # Update UI with confirmed nick
+            if self.chat_pane:
+                self.chat_pane.current_nick = nick
+                # Only show "nickname taken" message if it actually changed from original
+                if nick != original_nick:
+                    self.chat_pane.add_message("System", f"⚠️ Nickname '{original_nick}' was taken. Using '{nick}' instead.", is_system=True)
+            
+            if self.member_list:
+                self.member_list.set_current_nick(nick)
+        elif not success:
+            if self.chat_pane:
+                self.chat_pane.add_message("System", f"❌ Nickname error: {message}", is_system=True)
     
     def _on_channel_joined(self, channel: str, success: bool):
         """Handle channel join completion."""
@@ -551,7 +600,7 @@ class CordTUI(App):
             try:
                 self.irc.send_message(self.current_dm, message)
                 # Add to DM history
-                self.chat_pane.add_message(self.irc.nick, message, False, dm_nick=self.current_dm)
+                self.chat_pane.add_message(self.irc.get_confirmed_nick(), message, False, dm_nick=self.current_dm)
             except Exception as e:
                 self.chat_pane.add_message("System", f"Failed to send DM: {e}", is_system=True)
             return
@@ -575,7 +624,7 @@ class CordTUI(App):
         try:
             self.irc.send_message(self.current_channel, message)
             # Add to current channel's history using actual nick for consistent coloring
-            self.chat_pane.add_message(self.irc.nick, message, False, self.current_channel)
+            self.chat_pane.add_message(self.irc.get_confirmed_nick(), message, False, self.current_channel)
         except Exception as e:
             self.chat_pane.add_message("System", f"Failed to send: {e}", is_system=True)
     
@@ -622,7 +671,7 @@ class CordTUI(App):
                     # Send the wormhole code to the DM recipient
                     transfer_msg = f"📁 File transfer: {Path(filepath).name} | Use: /grab {code}"
                     self.irc.send_message(self.current_dm, transfer_msg)
-                    self.chat_pane.add_message(self.irc.nick, transfer_msg, False, dm_nick=self.current_dm)
+                    self.chat_pane.add_message(self.irc.get_confirmed_nick(), transfer_msg, False, dm_nick=self.current_dm)
                     self.chat_pane.add_embed(
                         "File Transfer Started",
                         f"File: {Path(filepath).name}\nCode: `{code}`\n\n✓ Code sent to {self.current_dm}",
@@ -671,7 +720,7 @@ class CordTUI(App):
                 if self.current_dm:
                     try:
                         self.irc.send_message(self.current_dm, "✓ File received successfully!")
-                        self.chat_pane.add_message(self.irc.nick, "✓ File received successfully!", False, dm_nick=self.current_dm)
+                        self.chat_pane.add_message(self.irc.get_confirmed_nick(), "✓ File received successfully!", False, dm_nick=self.current_dm)
                     except Exception:
                         pass
             else:
@@ -720,7 +769,7 @@ class CordTUI(App):
                             try:
                                 self.irc.send_message(self.current_channel, line)
                                 # Also show in local chat pane using actual nick
-                                self.chat_pane.add_message(self.irc.nick, line, False, self.current_channel)
+                                self.chat_pane.add_message(self.irc.get_confirmed_nick(), line, False, self.current_channel)
                             except Exception as e:
                                 self.chat_pane.add_message("System", f"Failed to send to IRC: {e}", is_system=True)
                                 break
@@ -824,7 +873,7 @@ class CordTUI(App):
                 # Send the message directly
                 try:
                     self.irc.send_message(target_nick, dm_message)
-                    self.chat_pane.add_message(self.irc.nick, dm_message, False, dm_nick=target_nick)
+                    self.chat_pane.add_message(self.irc.get_confirmed_nick(), dm_message, False, dm_nick=target_nick)
                     self.chat_pane.add_message("System", f"💬 Sent DM to {target_nick}", is_system=True)
                 except Exception as e:
                     self.chat_pane.add_message("System", f"Failed to send DM: {e}", is_system=True)
