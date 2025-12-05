@@ -353,7 +353,9 @@ class CordTUI(App):
     
     def _on_wormhole_status(self, status: str):
         """Handle wormhole status updates."""
-        self.call_from_thread(self.chat_pane.add_message, "Wormhole", status, is_system=True)
+        # Wormhole runs as async subprocess in same thread, so call directly
+        if self.chat_pane:
+            self.chat_pane.add_message("Wormhole", status, is_system=True)
     
     def _update_member_list_ui(self, members: list[str]):
         """Update member list UI - called from main thread."""
@@ -592,21 +594,92 @@ class CordTUI(App):
         args = parts[1] if len(parts) > 1 else ""
         
         if cmd == "send":
-            # Send file via wormhole
-            self.chat_pane.add_message("System", f"Sending {args}...", is_system=True)
-            code = await self.wormhole.send_file(args)
-            self.chat_pane.add_embed(
-                "File Transfer Ready",
-                f"Code: `{code}`\n\nRecipient should run: `/grab {code}`",
-                "success"
-            )
+            # Send file via wormhole - works best in DM context
+            if not args:
+                self.chat_pane.add_message("System", "Usage: /send <filepath>", is_system=True)
+                self.chat_pane.add_message("System", "Tip: Use in a DM to automatically share the code with the recipient.", is_system=True)
+                return
+            
+            filepath = args.strip()
+            
+            # Check if file exists
+            from pathlib import Path
+            if not Path(filepath).exists():
+                self.chat_pane.add_message("System", f"❌ File not found: {filepath}", is_system=True)
+                return
+            
+            self.chat_pane.add_message("System", f"📤 Preparing to send: {filepath}...", is_system=True)
+            code = await self.wormhole.send_file(filepath)
+            
+            if code.startswith("error") or code == "wormhole-not-found":
+                self.chat_pane.add_message("System", f"❌ Failed to initiate transfer: {code}", is_system=True)
+                self.chat_pane.add_message("System", "Make sure 'magic-wormhole' is installed: pip install magic-wormhole", is_system=True)
+                return
+            
+            # If we're in a DM, automatically send the code to the recipient
+            if self.current_dm:
+                try:
+                    # Send the wormhole code to the DM recipient
+                    transfer_msg = f"📁 File transfer: {Path(filepath).name} | Use: /grab {code}"
+                    self.irc.send_message(self.current_dm, transfer_msg)
+                    self.chat_pane.add_message(self.irc.nick, transfer_msg, False, dm_nick=self.current_dm)
+                    self.chat_pane.add_embed(
+                        "File Transfer Started",
+                        f"File: {Path(filepath).name}\nCode: `{code}`\n\n✓ Code sent to {self.current_dm}",
+                        "success"
+                    )
+                except Exception as e:
+                    self.chat_pane.add_message("System", f"Failed to send code to {self.current_dm}: {e}", is_system=True)
+                    self.chat_pane.add_embed(
+                        "File Transfer Ready",
+                        f"Code: `{code}`\n\nManually share: /grab {code}",
+                        "warning"
+                    )
+            else:
+                # Not in DM - just show the code
+                self.chat_pane.add_embed(
+                    "File Transfer Ready",
+                    f"Code: `{code}`\n\nRecipient should run: `/grab {code}`\n\n💡 Tip: Use /send in a DM to auto-share the code.",
+                    "success"
+                )
         
         elif cmd == "grab":
             # Receive file via wormhole
-            self.chat_pane.add_message("System", f"Receiving file with code {args}...", is_system=True)
-            success = await self.wormhole.receive_file(args)
+            if not args:
+                self.chat_pane.add_message("System", "Usage: /grab <code>", is_system=True)
+                self.chat_pane.add_message("System", "Example: /grab 7-guitar-ocean", is_system=True)
+                return
+            
+            code = args.strip()
+            self.chat_pane.add_message("System", f"📥 Receiving file with code: {code}...", is_system=True)
+            
+            # Determine download directory
+            from pathlib import Path
+            download_dir = Path.home() / "Downloads"
+            if not download_dir.exists():
+                download_dir = Path(".")
+            
+            success = await self.wormhole.receive_file(code, str(download_dir))
+            
             if success:
-                self.chat_pane.add_embed("File Received", "Transfer complete!", "success")
+                self.chat_pane.add_embed(
+                    "File Received",
+                    f"✓ Transfer complete!\nSaved to: {download_dir}",
+                    "success"
+                )
+                # Notify sender if in DM
+                if self.current_dm:
+                    try:
+                        self.irc.send_message(self.current_dm, "✓ File received successfully!")
+                        self.chat_pane.add_message(self.irc.nick, "✓ File received successfully!", False, dm_nick=self.current_dm)
+                    except Exception:
+                        pass
+            else:
+                self.chat_pane.add_embed(
+                    "Transfer Failed",
+                    "❌ Could not receive file. Check the code and try again.\nMake sure 'magic-wormhole' is installed.",
+                    "error"
+                )
         
         elif cmd == "ai":
             # Check if this is a private query

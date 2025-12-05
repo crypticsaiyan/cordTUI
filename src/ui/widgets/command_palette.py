@@ -16,8 +16,8 @@ COMMANDS = [
     ("/bookmark", "Bookmark current or specified channel"),
     ("/unbookmark", "Remove bookmark from channel"),
     ("/bookmarks", "List all bookmarked channels"),
-    ("/send", "Send a file via Magic Wormhole"),
-    ("/grab", "Receive a file via Magic Wormhole"),
+    ("/send", "Send file to user: /send <filepath> (best in DM)"),
+    ("/grab", "Receive file: /grab <code>"),
     ("/ai", "Ask AI assistant (use 'private' prefix for private response)"),
 ]
 
