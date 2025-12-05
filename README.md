@@ -23,6 +23,8 @@ python -m src.main
 # Test IRC connection
 python test_public_irc.py
 ```
+![alt text](image.png)
+
 
 ## ✨ Features
 
@@ -39,16 +41,23 @@ Authentic 1980s Ceefax/Oracle aesthetic with modern DevOps data. Features:
 - Strict 8-color palette (Black, White, Red, Green, Blue, Cyan, Magenta, Yellow)
 - Block graphics (█ ▀ ▄ ░) for authentic retro feel
 
+![alt text](image-1.png)
+
 See [TELETEXT_PAGE_100.md](TELETEXT_PAGE_100.md) for full details.
 
 ### 🔐 Wormhole File Transfer
 Peer-to-peer encrypted file transfers with human-readable codes. No cloud, no traces, just magic.
+
+![alt text](image-2.png)
+![alt text](image-4.png)
 
 ### 🔊 Geiger Counter Audio
 Audio feedback for system health. Hear errors before you see them. Escalating sounds for increasing error rates.
 
 ### 🤖 MCP Integration
 AI-powered commands via Model Context Protocol. Extensible tool system for automation.
+
+![alt text](image-3.png)
 
 ## 📊 Performance
 
@@ -150,13 +159,6 @@ phosphor/
 - **Beautiful**: Discord's UX in your terminal
 - **Practical**: Actually solves real problems
 
-## 🎓 Learn More
-
-See [INDEX.md](INDEX.md) for complete documentation navigation.
-
-## 📜 License
-
-[Add your license here]
 
 ---
 
