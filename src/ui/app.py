@@ -236,7 +236,6 @@ class CordTUI(App):
                 self.chat_pane.add_message("System", f"Joining {channel}...", is_system=True)
                 self.channels_joining.add(channel)
                 self.irc.join_channel(channel)
-<<<<<<< HEAD
                 
                 # Wait a bit for the join to complete
                 await asyncio.sleep(1)
@@ -244,11 +243,14 @@ class CordTUI(App):
                 # Mark as joined (we'll get confirmation via IRC events)
                 self.channels_joined.add(channel)
                 self.chat_pane.add_message("System", f"Joined [cyan]{channel}[/]", is_system=True)
-=======
->>>>>>> 34530fcf2b00bdd59718889920acd39c1943f871
             
-            # Update input placeholder - wait for join confirmation
-            self.input_bar.placeholder = "Joining channels..."
+            self.chat_pane.add_message("System", "Ready to chat! Select a channel and start messaging.", is_system=True)
+            
+            # Update input placeholder
+            if self.current_channel in self.channels_joined:
+                self.input_bar.placeholder = f"Message {self.current_channel}"
+            else:
+                self.input_bar.placeholder = "Select a channel to start chatting"
             
         except Exception as e:
             self.chat_pane.add_message("System", f"IRC connection failed: {e}", is_system=True)
@@ -338,9 +340,7 @@ class CordTUI(App):
         
         # Switch chat pane to show this channel's messages
         self.chat_pane.switch_channel(self.current_channel)
-<<<<<<< HEAD
-        self.chat_pane.add_message("System", f"Switched to [cyan]{self.current_channel}[/]", is_system=True)
-=======
+
         
         # Show appropriate message based on channel state
         if self.current_channel in self.channels_joining:
@@ -349,7 +349,6 @@ class CordTUI(App):
             self.chat_pane.add_message("System", f"Not joined to {self.current_channel}. Use /join to join.", is_system=True)
         else:
             self.chat_pane.add_message("System", f"Switched to {self.current_channel}", is_system=True)
->>>>>>> 34530fcf2b00bdd59718889920acd39c1943f871
         
         # Update member list for new channel
         if self.current_channel in self.channels_joined:
@@ -499,17 +498,10 @@ class CordTUI(App):
                 # Switch to the new channel
                 self.current_channel = channel
                 self.chat_pane.switch_channel(self.current_channel)
-<<<<<<< HEAD
                 self.chat_pane.add_message("System", f"Joined [cyan]{channel}[/]", is_system=True)
                 
                 # Update UI and focus the channel in sidebar
                 self.input_bar.placeholder = f"Message {self.current_channel}"
-=======
-                self.chat_pane.add_message("System", f"Joining {channel}...", is_system=True)
-                
-                # Update UI
-                self.input_bar.placeholder = f"Joining {self.current_channel}..."
->>>>>>> 34530fcf2b00bdd59718889920acd39c1943f871
                 self.member_list.show_loading(channel)
                 sidebar._refresh_tree(select_channel=channel)
         
@@ -691,17 +683,11 @@ class CordTUI(App):
         # Switch to the new channel
         self.current_channel = channel
         self.chat_pane.switch_channel(self.current_channel)
-<<<<<<< HEAD
         self.chat_pane.add_message("System", f"Joined [cyan]{channel}[/]", is_system=True)
         
         # Update UI and focus the channel in sidebar
         self.input_bar.placeholder = f"Message {self.current_channel}"
-=======
-        self.chat_pane.add_message("System", f"Joining {channel}...", is_system=True)
-        
-        # Update UI
-        self.input_bar.placeholder = f"Joining {self.current_channel}..."
->>>>>>> 34530fcf2b00bdd59718889920acd39c1943f871
+
         self.member_list.show_loading(channel)
         sidebar._refresh_tree(select_channel=channel)
     
