@@ -12,6 +12,7 @@ from textual.message import Message
 from src.ui.widgets.chat_pane import ChatPane
 from src.ui.widgets.sidebar import Sidebar, MemberList
 from src.ui.widgets.channel_search import ChannelSearchScreen
+from src.ui.widgets.command_palette import CommandPalette
 from src.ui.screens import TeletextScreen, HomeScreen
 from src.core.irc_client import IRCClient
 from src.core.mcp_client import MCPClient
@@ -117,6 +118,7 @@ class CordTUI(App):
             # Center - chat pane
             with Container(id="chat-container"):
                 yield ChatPane(id="chat-pane")
+                yield CommandPalette(id="command-palette")
                 yield Input(
                     placeholder=f"Message {self.current_channel}",
                     id="input-bar"
@@ -206,51 +208,58 @@ class CordTUI(App):
             self.connection_status = "connecting"
             self.chat_pane.add_message("System", f"Connecting to {self.irc.host}:{self.irc.port}...", is_system=True)
             
-            # Check internet connectivity first
+            # Quick connectivity check with shorter timeout
             try:
                 import socket
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                sock.settimeout(5)
+                sock.settimeout(3)  # Reduced from 5 to 3 seconds
                 sock.connect((self.irc.host, self.irc.port))
                 sock.close()
-                self.chat_pane.add_message("System", "✓ Network connectivity verified", is_system=True)
             except (socket.error, OSError, socket.timeout) as e:
                 self.chat_pane.add_message("System", f"❌ Cannot reach {self.irc.host}:{self.irc.port}", is_system=True)
-                self.chat_pane.add_message("System", "Device appears to be offline. Check internet connection.", is_system=True)
+                self.chat_pane.add_message("System", "Check your internet connection.", is_system=True)
                 self.connection_status = "offline"
                 self.input_bar.placeholder = "Offline - Check connection"
                 return
             
             await self.irc.connect()
             
-            # Give it a moment to connect
-            await asyncio.sleep(2)
+            # Wait for connection with timeout - poll for client readiness
+            max_wait = 10  # Maximum 10 seconds to connect
+            waited = 0
+            while waited < max_wait:
+                if self.irc.client is not None:
+                    break
+                await asyncio.sleep(0.3)
+                waited += 0.3
+            
+            if self.irc.client is None:
+                self.chat_pane.add_message("System", "❌ Connection timed out", is_system=True)
+                self.connection_status = "failed"
+                self.input_bar.placeholder = "Connection failed - restart app"
+                return
             
             self.connection_status = "connected"
             self.irc_connected = True
             self.chat_pane.add_message("System", "✓ Connected to IRC!", is_system=True)
             
-            # Join channels with loading indicators
+            # Join all channels at once (IRC handles them in parallel)
             server_channels = self.selected_server.get("channels", [])
             for channel in server_channels:
-                self.chat_pane.add_message("System", f"Joining {channel}...", is_system=True)
                 self.channels_joining.add(channel)
                 self.irc.join_channel(channel)
-                
-                # Wait a bit for the join to complete
-                await asyncio.sleep(1)
-                
-                # Mark as joined (we'll get confirmation via IRC events)
-                self.channels_joined.add(channel)
-                self.chat_pane.add_message("System", f"Joined [cyan]{channel}[/]", is_system=True)
             
-            self.chat_pane.add_message("System", "Ready to chat! Select a channel and start messaging.", is_system=True)
+            if server_channels:
+                self.chat_pane.add_message("System", f"Joining {len(server_channels)} channel(s)...", is_system=True)
+            
+            # Wait briefly for initial joins, but don't block - callbacks will handle completion
+            await asyncio.sleep(0.5)
             
             # Update input placeholder
             if self.current_channel in self.channels_joined:
                 self.input_bar.placeholder = f"Message {self.current_channel}"
             else:
-                self.input_bar.placeholder = "Select a channel to start chatting"
+                self.input_bar.placeholder = f"Joining {self.current_channel}..."
             
         except Exception as e:
             self.chat_pane.add_message("System", f"IRC connection failed: {e}", is_system=True)
@@ -340,7 +349,6 @@ class CordTUI(App):
         
         # Switch chat pane to show this channel's messages
         self.chat_pane.switch_channel(self.current_channel)
-
         
         # Show appropriate message based on channel state
         if self.current_channel in self.channels_joining:
@@ -361,17 +369,83 @@ class CordTUI(App):
         else:
             # Not joined yet
             self.member_list.show_loading(self.current_channel)
-    
+
+    def on_input_changed(self, event: Input.Changed):
+        """Handle input text changes to show command palette."""
+        if not hasattr(self, "input_bar") or self.input_bar is None:
+            return
+
+        try:
+            palette = self.query_one("#command-palette", CommandPalette)
+        except Exception:
+            return
+
+        text = event.value
+
+        # Show palette when typing starts with /
+        if text.startswith("/") and " " not in text:
+            palette.show()
+            palette.filter(text)
+        else:
+            palette.hide()
+
+    def on_key(self, event) -> None:
+        """Handle key events for command palette navigation."""
+        if not hasattr(self, "input_bar") or self.input_bar is None:
+            return
+
+        # Only handle when input is focused
+        if not self.input_bar.has_focus:
+            return
+
+        try:
+            palette = self.query_one("#command-palette", CommandPalette)
+        except Exception:
+            return
+
+        if not palette.is_visible():
+            return
+
+        # Handle navigation keys
+        if event.key == "up":
+            palette.move_up()
+            event.prevent_default()
+            event.stop()
+        elif event.key == "down":
+            palette.move_down()
+            event.prevent_default()
+            event.stop()
+        elif event.key == "tab" or event.key == "enter":
+            # Auto-complete the selected command
+            cmd = palette.select_current()
+            if cmd:
+                self.input_bar.value = cmd + " "
+                self.input_bar.cursor_position = len(self.input_bar.value)
+                palette.hide()
+            event.prevent_default()
+            event.stop()
+        elif event.key == "escape":
+            palette.hide()
+            event.prevent_default()
+            event.stop()
+
     async def on_input_submitted(self, event: Input.Submitted):
         """Handle message submission."""
         # Ignore if input_bar not yet initialized (e.g., from HomeScreen)
         if not hasattr(self, "input_bar") or self.input_bar is None:
             return
-        
+
+        # Hide command palette on submit
+        try:
+            palette = self.query_one("#command-palette", CommandPalette)
+            palette.hide()
+        except Exception:
+            pass
+
         message = event.value.strip()
         if not message:
             return
-        
+
         self.input_bar.value = ""
         
         # Check if we're in a valid channel
@@ -409,6 +483,14 @@ class CordTUI(App):
     async def _handle_command(self, command: str):
         """Handle slash commands."""
         parts = command[1:].split(maxsplit=1)
+        if not parts or not parts[0]:
+            # Just "/" with no command
+            self.chat_pane.add_message(
+                "System",
+                "Available commands: /join, /bookmark, /unbookmark, /bookmarks, /send, /grab, /ai",
+                is_system=True,
+            )
+            return
         cmd = parts[0]
         args = parts[1] if len(parts) > 1 else ""
         
@@ -508,32 +590,42 @@ class CordTUI(App):
         elif cmd == "bookmark":
             # Bookmark current or specified channel
             channel = args.strip() if args else self.current_channel
-            if not channel.startswith('#'):
-                channel = '#' + channel
-            
-            if channel in self.bookmarks:
-                self.chat_pane.add_message("System", f"{channel} is already bookmarked", is_system=True)
+            if not channel.startswith("#"):
+                channel = "#" + channel
+
+            sidebar = self.query_one("#sidebar", Sidebar)
+            if sidebar.is_bookmarked(channel):
+                self.chat_pane.add_message(
+                    "System", f"{channel} is already bookmarked", is_system=True
+                )
             else:
-                self.bookmarks.append(channel)
-                sidebar = self.query_one("#sidebar", Sidebar)
                 sidebar.add_bookmark(channel)
+                if channel not in self.bookmarks:
+                    self.bookmarks.append(channel)
                 self._save_bookmarks()
-                self.chat_pane.add_message("System", f"⭐ Bookmarked {channel}", is_system=True)
-        
+                self.chat_pane.add_message(
+                    "System", f"⭐ Bookmarked {channel}", is_system=True
+                )
+
         elif cmd == "unbookmark":
             # Remove bookmark from current or specified channel
             channel = args.strip() if args else self.current_channel
-            if not channel.startswith('#'):
-                channel = '#' + channel
-            
-            if channel not in self.bookmarks:
-                self.chat_pane.add_message("System", f"{channel} is not bookmarked", is_system=True)
+            if not channel.startswith("#"):
+                channel = "#" + channel
+
+            sidebar = self.query_one("#sidebar", Sidebar)
+            if not sidebar.is_bookmarked(channel):
+                self.chat_pane.add_message(
+                    "System", f"{channel} is not bookmarked", is_system=True
+                )
             else:
-                self.bookmarks.remove(channel)
-                sidebar = self.query_one("#sidebar", Sidebar)
                 sidebar.remove_bookmark(channel)
+                if channel in self.bookmarks:
+                    self.bookmarks.remove(channel)
                 self._save_bookmarks()
-                self.chat_pane.add_message("System", f"Removed bookmark from {channel}", is_system=True)
+                self.chat_pane.add_message(
+                    "System", f"Removed bookmark from {channel}", is_system=True
+                )
         
         elif cmd == "bookmarks":
             # List all bookmarks

@@ -58,46 +58,53 @@ class Sidebar(Container):
         """Add a channel to bookmarks."""
         if channel not in self.bookmarked_channels:
             self.bookmarked_channels.append(channel)
-            self._refresh_tree()
+            self._refresh_tree(select_channel=self.active_channel)
     
     def remove_bookmark(self, channel: str):
         """Remove a channel from bookmarks."""
         if channel in self.bookmarked_channels:
             self.bookmarked_channels.remove(channel)
-            self._refresh_tree()
+            self._refresh_tree(select_channel=self.active_channel)
     
     def _refresh_tree(self, select_channel: str = None):
         """Refresh the channel tree display."""
         tree = self.query_one(Tree)
         
-        # Store currently selected node data before refresh
-        selected_channel = None
-        if tree.cursor_node and tree.cursor_node.data:
-            selected_channel = tree.cursor_node.data
+        # Use provided select_channel, or fall back to active_channel, or currently selected
+        target_channel = select_channel
+        if target_channel is None:
+            target_channel = self.active_channel
+        if target_channel is None and tree.cursor_node and tree.cursor_node.data:
+            target_channel = tree.cursor_node.data
         
-        # Clear and rebuild tree
-        tree.root.remove_children()
+        # Clear tree by removing all children from root
+        tree.clear()
+        tree.root.expand()
         
-        # Combine all channels (bookmarked and regular)
-        all_channels = []
+        # Track which line to select
+        target_line = None
+        line_index = 0
         
         # Add bookmarked channels first with a star
-        if self.bookmarked_channels:
-            for channel in self.bookmarked_channels:
-                node = tree.root.add_leaf(f"⭐ {channel}", data=channel)
-                all_channels.append(channel)
-                # Re-select if this was the selected channel
-                if channel == selected_channel:
-                    tree.select_node(node)
+        for channel in self.bookmarked_channels:
+            tree.root.add_leaf(f"⭐ {channel}", data=channel)
+            if channel == target_channel:
+                target_line = line_index
+                self.active_channel = channel
+            line_index += 1
         
-        # Add regular channels
+        # Add regular channels (not bookmarked)
         for channel in self.channels:
             if channel not in self.bookmarked_channels:
-                node = tree.root.add_leaf(channel, data=channel)
-                all_channels.append(channel)
-                # Re-select if this was the selected channel
-                if channel == selected_channel:
-                    tree.select_node(node)
+                tree.root.add_leaf(channel, data=channel)
+                if channel == target_channel:
+                    target_line = line_index
+                    self.active_channel = channel
+                line_index += 1
+        
+        # Move cursor to target channel (line 0 is root, so add 1)
+        if target_line is not None:
+            tree.cursor_line = target_line + 1
     
     def mark_channel_ready(self, channel: str):
         """Mark a channel as ready (joined successfully)."""
@@ -117,6 +124,17 @@ class Sidebar(Container):
     def is_bookmarked(self, channel: str) -> bool:
         """Check if a channel is bookmarked."""
         return channel in self.bookmarked_channels
+    
+    def select_channel(self, channel: str):
+        """Select a channel in the tree by name."""
+        tree = self.query_one(Tree)
+        for i, node in enumerate(tree.root.children):
+            if node.data == channel:
+                # Move cursor to this line (line 0 is root, so add 1)
+                tree.cursor_line = i + 1
+                tree.scroll_to_node(node)
+                self.active_channel = channel
+                break
 
 
 class MemberList(Container):

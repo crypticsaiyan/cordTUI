@@ -37,7 +37,8 @@ class IRCClient:
                 debug=False,
                 ns_identity=None,
                 connect_modes=None,
-                quit_message="Goodbye!"
+                quit_message="Goodbye!",
+                auto_connect=False  # Don't auto-connect, we'll do it explicitly
             )
             
             # Store client reference for access from other threads
@@ -167,8 +168,8 @@ class IRCClient:
         self._thread = threading.Thread(target=run_client, daemon=True)
         self._thread.start()
         
-        # Wait a bit for connection
-        await asyncio.sleep(2)
+        # Don't block here - let the app poll for client readiness
+        await asyncio.sleep(0.1)
     
     def join_channel(self, channel: str):
         """Join a channel."""

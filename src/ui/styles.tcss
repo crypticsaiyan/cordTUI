@@ -85,6 +85,23 @@ Input {
     padding: 0 1;
 }
 
+.message-row {
+    width: 100%;
+    height: auto;
+    padding: 0 1;
+}
+
+.message-content {
+    width: 1fr;
+}
+
+.message-time {
+    width: auto;
+    min-width: 6;
+    text-align: right;
+    color: #72767d;
+}
+
 .message-author {
     color: #5865F2;
     text-style: bold;
@@ -319,4 +336,39 @@ Button.warning {
     color: #8e9297;
     text-style: italic;
     padding: 0 1;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   COMMAND PALETTE - Slash command suggestions
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+#command-palette {
+    dock: bottom;
+    offset: 0 -3;
+    width: 50;
+    height: auto;
+    max-height: 12;
+    background: #2f3136;
+    border: solid #5865F2;
+    padding: 0 1;
+    display: none;
+    layer: overlay;
+}
+
+#command-palette.visible {
+    display: block;
+}
+
+#command-palette #command-list {
+    height: auto;
+}
+
+#command-palette .command-item {
+    padding: 0 1;
+    height: 1;
+}
+
+#command-palette .command-item.highlighted {
+    background: #5865F2;
 }

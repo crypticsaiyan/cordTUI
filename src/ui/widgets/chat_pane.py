@@ -1,6 +1,7 @@
 """Chat pane widget - the center message stream."""
 
-from textual.containers import VerticalScroll
+from datetime import datetime
+from textual.containers import VerticalScroll, Horizontal
 from textual.widgets import Static, Markdown
 
 from src.ui.widgets.user_colors import format_username_colored
@@ -13,35 +14,49 @@ class ChatPane(VerticalScroll):
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # Store messages per channel: {channel: [(author, content, is_system), ...]}
+        # Store messages per channel: {channel: [(author, content, is_system, timestamp), ...]}
         self.channel_messages = {}
         self.current_channel = None
         self.current_nick = None  # The current user's IRC nick
+    
+    def _get_timestamp(self) -> str:
+        """Get current time formatted as HH:MM."""
+        return datetime.now().strftime("%H:%M")
+    
+    def _create_message_widget(self, author: str, content: str, is_system: bool, timestamp: str) -> Horizontal:
+        """Create a message row widget with content and timestamp."""
+        if is_system:
+            content_widget = Static(f"[italic yellow]⚙ {content}[/]", classes="message-content system-message")
+        else:
+            # Use colored username with Rich markup
+            colored_author = format_username_colored(author)
+            # Add (you) indicator if this is the current user
+            if self.current_nick and author == self.current_nick:
+                content_widget = Static(f"{colored_author} (you): {content}", classes="message-content message")
+            else:
+                content_widget = Static(f"{colored_author}: {content}", classes="message-content message")
+        
+        time_widget = Static(f"[dim]{timestamp}[/]", classes="message-time")
+        
+        return Horizontal(content_widget, time_widget, classes="message-row")
     
     def add_message(self, author: str, content: str, is_system: bool = False, channel: str = None):
         """Add a message to the chat."""
         # Strip leading colon from content if present (IRC protocol artifact)
         content = content.lstrip(": ")
         
+        # Get current timestamp
+        timestamp = self._get_timestamp()
+        
         # Store message in history
         if channel:
             if channel not in self.channel_messages:
                 self.channel_messages[channel] = []
-            self.channel_messages[channel].append((author, content, is_system))
+            self.channel_messages[channel].append((author, content, is_system, timestamp))
         
         # Only display if it's for the current channel or no channel specified (system messages)
         if channel is None or channel == self.current_channel:
-            if is_system:
-                msg_widget = Static(f"[italic yellow]⚙ {content}[/]", classes="system-message")
-            else:
-                # Use colored username with Rich markup
-                colored_author = format_username_colored(author)
-                # Add (you) indicator if this is the current user
-                if self.current_nick and author == self.current_nick:
-                    msg_widget = Static(f"{colored_author} (you): {content}", classes="message")
-                else:
-                    msg_widget = Static(f"{colored_author}: {content}", classes="message")
-            
+            msg_widget = self._create_message_widget(author, content, is_system, timestamp)
             self.mount(msg_widget)
             self.scroll_end(animate=False)
     
@@ -54,17 +69,15 @@ class ChatPane(VerticalScroll):
         
         # Restore messages for this channel
         if channel in self.channel_messages:
-            for author, content, is_system in self.channel_messages[channel]:
-                if is_system:
-                    msg_widget = Static(f"[italic yellow]⚙ {content}[/]", classes="system-message")
+            for msg_data in self.channel_messages[channel]:
+                # Handle both old format (3 items) and new format (4 items with timestamp)
+                if len(msg_data) == 4:
+                    author, content, is_system, timestamp = msg_data
                 else:
-                    # Use colored username with Rich markup
-                    colored_author = format_username_colored(author)
-                    # Add (you) indicator if this is the current user
-                    if self.current_nick and author == self.current_nick:
-                        msg_widget = Static(f"{colored_author} (you): {content}", classes="message")
-                    else:
-                        msg_widget = Static(f"{colored_author}: {content}", classes="message")
+                    author, content, is_system = msg_data
+                    timestamp = "--:--"  # Placeholder for old messages without timestamp
+                
+                msg_widget = self._create_message_widget(author, content, is_system, timestamp)
                 self.mount(msg_widget)
         
         self.scroll_end(animate=False)
