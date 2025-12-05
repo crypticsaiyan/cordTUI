@@ -1,1 +1,1 @@
-"""UI components for Cord-TUI."""
+"""UI components for Phosphor."""

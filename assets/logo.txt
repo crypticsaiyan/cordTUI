@@ -8,9 +8,9 @@
                           ^^^^
                      (highlighted P)
 
-    phosphor - Discord UX + IRC Protocol = Terminal Magic
+    phosphor - Modern IRC Client = Terminal Magic
     
-    🎨 Discord-like interface in your terminal
+    🎨 Modern interface in your terminal
     📺 Retro Teletext dashboard (Press F1)
     🔐 Peer-to-peer file transfers
     🔊 Audio feedback for system health

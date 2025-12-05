@@ -1,13 +1,13 @@
 ╔═══════════════════════════════════════════════════════════════════════════╗
 ║                    TELETEXT DASHBOARD ARCHITECTURE                        ║
-║                         (Page 100 - CORD-OPS)                             ║
+║                         (Page 100 - PHOSPHOR)                             ║
 ╚═══════════════════════════════════════════════════════════════════════════╝
 
 ┌───────────────────────────────────────────────────────────────────────────┐
 │                          USER INTERACTION LAYER                           │
 ├───────────────────────────────────────────────────────────────────────────┤
 │                                                                           │
-│   Cord-TUI Chat Interface                                                │
+│   Phosphor Chat Interface                                                │
 │   ┌─────────────────────────────────────────────────────────────┐        │
 │   │  #general                                                    │        │
 │   │  User: Hello world!                                          │        │
@@ -20,7 +20,7 @@
 │   Teletext Dashboard (Page 100)                                          │
 │   ┌─────────────────────────────────────────────────────────────┐        │
 │   │ █████████████████████████████████████████████████████████   │        │
-│   │ █ P100    CORD-OPS MONITOR           23:45:17 █             │        │
+│   │ █ P100    PHOSPHOR MONITOR           23:45:17 █             │        │
 │   │ █████████████████████████████████████████████████████████   │        │
 │   │                                                              │        │
 │   │ ▀▀▀ SERVER VITAL SIGNS ▀▀▀                                  │        │
@@ -160,7 +160,7 @@
 │   ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓      │
 │   ┃ ZONE 1: HEADER                                              ┃      │
 │   ┃ ─────────────────────────────────────────────────────────── ┃      │
-│   ┃ P100 (left) + CORD-OPS (center) + 23:45:17 (right)         ┃      │
+│   ┃ P100 (left) + PHOSPHOR (center) + 23:45:17 (right)         ┃      │
 │   ┃ White text on black, full-width block border               ┃      │
 │   ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛      │
 │                                                                           │
@@ -239,7 +239,7 @@
 │   ├─ News, weather, sports                                               │
 │   └─ Died with analog TV shutdown                                        │
 │                                                                           │
-│   Resurrected As: CORD-OPS Dashboard (2025)                              │
+│   Resurrected As: Phosphor Dashboard (2025)                              │
 │   ├─ Terminal-based monitoring                                           │
 │   ├─ Character-grid layout                                               │
 │   ├─ Same 8-color palette                                                │

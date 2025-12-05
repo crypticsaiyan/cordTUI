@@ -1,5 +1,5 @@
 ████████████████████████████████████████████████████████████████████████
-█ P100          CORD-OPS DEVOPS MONITOR                23:45:17 █
+█ P100          PHOSPHOR DEVOPS MONITOR                23:45:17 █
 ████████████████████████████████████████████████████████████████████████
 
 ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
@@ -41,10 +41,10 @@
 
 
 ═══════════════════════════════════════════════════════════════════════
-                    CORD-TEXT: PAGE 100 PREVIEW
+                    PHOSPHOR: PAGE 100 PREVIEW
 ═══════════════════════════════════════════════════════════════════════
 
-This is what you'll see when you press F1 in Cord-TUI!
+This is what you'll see when you press F1 in Phosphor!
 
 Features:
   ✓ Real-time ticking clock (updates every second)

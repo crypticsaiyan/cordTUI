@@ -1,4 +1,4 @@
-/* Discord-inspired theme */
+/* Modern terminal theme */
 /* Theme variables are controlled by app.py theme system */
 
 Screen {
@@ -138,7 +138,7 @@ Screen.halloween {
 
 /* ═══════════════════════════════════════════════════════════════════════════
    TEXTUAL COMMAND PALETTE (Ctrl+P) - Built-in Textual command palette
-   Centered box overlay with Discord-inspired styling
+   Centered box overlay with modern styling
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* Main command palette screen - full overlay */

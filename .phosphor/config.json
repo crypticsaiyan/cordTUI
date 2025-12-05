@@ -5,13 +5,13 @@
       "host": "irc.libera.chat",
       "port": 6667,
       "ssl": false,
-      "nick": "cord_user",
+      "nick": "phosphor_user",
       "channels": ["#sukhoi"]
     }
   ],
   "theme": {
-    "discord_gray": "#36393f",
-    "blurple": "#5865F2",
+    "dark_gray": "#36393f",
+    "primary_blue": "#5865F2",
     "online_green": "#43b581",
     "offline_gray": "#747f8d"
   },

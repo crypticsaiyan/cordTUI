@@ -53,7 +53,7 @@ async def demo_teletext():
     print("\n📺 Teletext Dashboard Demo")
     print("=" * 50)
     print("Press F1 to toggle between:")
-    print("  • Discord-like chat interface")
+    print("  • Modern chat interface")
     print("  • Retro Ceefax-style metrics dashboard")
     print("=" * 50)
 

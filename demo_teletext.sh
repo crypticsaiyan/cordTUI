@@ -2,7 +2,7 @@
 # Demo script for the Teletext Dashboard (Page 100)
 
 echo "════════════════════════════════════════════════════════════════════════"
-echo "  📺 CORD-TEXT: Teletext Dashboard Demo"
+echo "  📺 PHOSPHOR: Teletext Dashboard Demo"
 echo "════════════════════════════════════════════════════════════════════════"
 echo ""
 echo "This demo showcases the authentic 1980s Ceefax/Oracle Teletext aesthetic"
@@ -19,7 +19,7 @@ echo "  ✓ Block graphics using Unicode characters (█ ▀ ▄ ░)"
 echo ""
 echo "════════════════════════════════════════════════════════════════════════"
 echo ""
-echo "Starting Cord-TUI..."
+echo "Starting Phosphor..."
 echo ""
 echo "Instructions:"
 echo "  1. Wait for the app to load"

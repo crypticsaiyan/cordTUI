@@ -6,10 +6,10 @@ USER_COLORS = [
     "#ff00ff",  # magenta
     "#00ff00",  # green
     "#ffff00",  # yellow
-    "#5865f2",  # discord blue
+    "#5865f2",  # blue
     "#ff6b6b",  # soft red
-    "#43b581",  # discord green
-    "#faa61a",  # discord orange
+    "#43b581",  # emerald green
+    "#faa61a",  # orange
     "#e91e63",  # pink
     "#9b59b6",  # purple
     "#1abc9c",  # teal

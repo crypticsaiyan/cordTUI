@@ -1,8 +1,8 @@
-# Cord-TUI Architecture
+# Phosphor Architecture
 
 ## Overview
 
-Cord-TUI is a terminal-based IRC client that combines the lightweight IRC protocol with Discord's UX paradigm. It's built with Python using Textual for the UI and integrates three "resurrection" features that bring back dead tech concepts with modern improvements.
+Phosphor is a terminal-based IRC client that combines the lightweight IRC protocol with modern UX design. It's built with Python using Textual for the UI and integrates three "resurrection" features that bring back dead tech concepts with modern improvements.
 
 ## Tech Stack
 
@@ -57,7 +57,7 @@ Textual-based frontend, completely decoupled from backend.
 
 #### `styles.tcss`
 - CSS-like styling for Textual
-- Discord color palette (#36393f, #5865F2)
+- Modern color palette (#36393f, #5865F2)
 - Responsive grid layout
 - Embed styling with colored borders
 
@@ -72,9 +72,9 @@ Custom reusable components:
 
 - **chat_pane.py**: Message stream with Markdown support
 - **sidebar.py**: Channel tree and member list
-- **embed.py**: Discord-style rich cards
+- **embed.py**: Rich message cards
 
-### 3. Configuration Layer (`.cord/`)
+### 3. Configuration Layer (`.phosphor/`)
 
 - `config.json`: Server settings, theme, audio preferences
 - `sounds/`: Custom audio samples (future)
@@ -166,7 +166,7 @@ self.pop_screen()                    # F1 again
 
 ## Performance Characteristics
 
-- **Memory**: ~20MB (vs 2GB for Discord/Slack)
+- **Memory**: ~20MB (vs 2GB for typical chat apps)
 - **Startup**: <1 second
 - **Latency**: Near-zero (terminal rendering)
 - **Network**: Minimal (IRC protocol is text-based)
@@ -187,7 +187,7 @@ async def _new_command(self, args):
 Edit `src/ui/styles.tcss` with CSS-like syntax.
 
 ### Audio Samples
-Add `.wav` files to `.cord/sounds/` and reference in `audio.py`.
+Add `.wav` files to `.phosphor/sounds/` and reference in `audio.py`.
 
 ### New Screens
 Create in `src/ui/screens.py` and bind to keys in `app.py`.

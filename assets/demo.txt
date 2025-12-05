@@ -16,7 +16,7 @@ api_keys:
 ## Notes
 
 This file would normally contain sensitive configuration.
-With Cord-TUI's wormhole feature, you can transfer it
+With Phosphor's wormhole feature, you can transfer it
 peer-to-peer without uploading to the cloud.
 
 No Slack. No Dropbox. No traces.

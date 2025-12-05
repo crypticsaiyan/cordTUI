@@ -40,10 +40,10 @@ def _load_last_nick() -> str:
         try:
             with open(settings_path) as f:
                 data = json.load(f)
-                return data.get("nick", "cord_user")
+                return data.get("nick", "phosphor_user")
         except Exception:
             pass
-    return "cord_user"
+    return "phosphor_user"
 
 
 def _save_last_nick(nick: str):
@@ -81,10 +81,10 @@ class HomeScreen(Screen):
         super().__init__(**kwargs)
         self.config = config or {}
         self.theme = theme
-        self.servers = self.config.get("servers", [{"name": "Libera.Chat", "host": "irc.libera.chat", "port": 6667, "ssl": False, "nick": "cord_user", "channels": []}])
+        self.servers = self.config.get("servers", [{"name": "Libera.Chat", "host": "irc.libera.chat", "port": 6667, "ssl": False, "nick": "phosphor_user", "channels": []}])
         self.selected_server_idx = 0
         # Load last used nickname, or fall back to config/default
-        self.default_nick = _load_last_nick() or self.servers[0].get("nick", "cord_user")
+        self.default_nick = _load_last_nick() or self.servers[0].get("nick", "phosphor_user")
         self.audio_config = self.config.get("audio", {"enabled": True, "volume": 0.5})
         self.current_volume = self.audio_config.get("volume", 0.5)
         self.audio_enabled = self.audio_config.get("enabled", True)
@@ -142,7 +142,7 @@ class HomeScreen(Screen):
             text_color = "white"
             dim_color = "dim"
             logo = LOGO
-            tagline = "[cyan]     Discord UX + IRC Protocol = Terminal Magic[/]"
+            tagline = "[cyan]     Modern IRC Client = Terminal Magic[/]"
         
         # Selection indicators
         sel = lambda i: ">" if self.selected_row == i else " "
@@ -310,7 +310,7 @@ class HomeScreen(Screen):
             self.selected_server_idx = (self.selected_server_idx - 1) % len(self.servers)
             # Update server and nick to match
             self.current_server = self.servers[self.selected_server_idx].get("host", "irc.libera.chat")
-            self.current_nick = self.servers[self.selected_server_idx].get("nick", "cord_user")
+            self.current_nick = self.servers[self.selected_server_idx].get("nick", "phosphor_user")
         elif self.selected_row == 2:  # Audio toggle
             self.audio_enabled = not self.audio_enabled
         elif self.selected_row == 3 and self.audio_enabled:  # Volume (only if audio on)
@@ -327,7 +327,7 @@ class HomeScreen(Screen):
             self.selected_server_idx = (self.selected_server_idx + 1) % len(self.servers)
             # Update server and nick to match
             self.current_server = self.servers[self.selected_server_idx].get("host", "irc.libera.chat")
-            self.current_nick = self.servers[self.selected_server_idx].get("nick", "cord_user")
+            self.current_nick = self.servers[self.selected_server_idx].get("nick", "phosphor_user")
         elif self.selected_row == 2:  # Audio toggle
             self.audio_enabled = not self.audio_enabled
         elif self.selected_row == 3 and self.audio_enabled:  # Volume (only if audio on)

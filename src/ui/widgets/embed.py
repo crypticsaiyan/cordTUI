@@ -1,11 +1,11 @@
-"""Embed widget - Discord-style rich cards."""
+"""Embed widget - Rich message cards."""
 
 from textual.widgets import Static
 from textual.containers import Container
 
 
 class Embed(Container):
-    """A Discord-style embed card."""
+    """A rich message embed card."""
     
     def __init__(self, title: str, description: str, color: str = "blurple", **kwargs):
         super().__init__(**kwargs)

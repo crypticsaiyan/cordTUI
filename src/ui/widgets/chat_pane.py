@@ -134,7 +134,7 @@ class ChatPane(VerticalScroll):
         self.scroll_end(animate=False)
     
     def add_embed(self, title: str, content: str, embed_type: str = "info"):
-        """Add a Discord-style embed card."""
+        """Add a rich embed card."""
         embed_content = f"**{title}**\n\n{content}"
         embed_widget = Markdown(embed_content)
         embed_widget.add_class("embed")

@@ -57,7 +57,7 @@ class PhosphorCommands(Provider):
             ("Toggle Teletext Dashboard", "Open the retro teletext dashboard", self._toggle_teletext),
             ("Search Channels", "Search and join IRC channels", self._search_channels),
             ("Toggle Bookmark", "Bookmark or unbookmark current channel", self._toggle_bookmark),
-            ("Theme: Default", "Switch to default Discord-inspired theme", self._theme_default),
+            ("Theme: Default", "Switch to default theme", self._theme_default),
             ("Theme: Halloween 🎃", "Switch to spooky Halloween theme", self._theme_halloween),
             ("Take Screenshot 📸", "Save a screenshot of the current screen", self._take_screenshot),
         ]

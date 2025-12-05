@@ -1,1 +1,1 @@
-"""Core backend logic for Cord-TUI."""
+"""Core backend logic for Phosphor."""
