@@ -39,3 +39,11 @@ Thumbs.db
 
 # Config overrides
 .cord/local.json
+
+# Azure credentials and secrets
+.env*
+.env.local
+.env.*.local
+
+# Bot logs
+bot.log

@@ -1,0 +1,375 @@
+================================================================================
+KIRO AZURE IRC BOT - ARCHITECTURE DIAGRAM
+================================================================================
+
+HIGH-LEVEL FLOW:
+================================================================================
+
+    ┌─────────────────┐
+    │   IRC User      │
+    │  (in channel)   │
+    └────────┬────────┘
+             │
+             │ Types: /ai list containers
+             │
+             ↓
+    ┌─────────────────────────────────────────┐
+    │         IRC Server                      │
+    │      (irc.libera.chat)                  │
+    └────────┬────────────────────────────────┘
+             │
+             │ PRIVMSG #channel :/ai list containers
+             │
+             ↓
+    ┌─────────────────────────────────────────┐
+    │    Kiro Azure IRC Bot                   │
+    │    (kiro_azure_irc_bot.py)              │
+    │                                          │
+    │  ┌────────────────────────────────────┐ │
+    │  │  IRC AI Handler                    │ │
+    │  │  - Parse /ai command               │ │
+    │  │  - Check rate limiting             │ │
+    │  │  - Extract question                │ │
+    │  └────────┬───────────────────────────┘ │
+    │           │                              │
+    │           ↓                              │
+    │  ┌────────────────────────────────────┐ │
+    │  │  Azure Container Manager           │ │
+    │  │  - Check cache (30s TTL)           │ │
+    │  │  - Authenticate with Azure         │ │
+    │  │  - Query container metadata        │ │
+    │  │  - Process natural language        │ │
+    │  │  - Format response                 │ │
+    │  └────────┬───────────────────────────┘ │
+    └───────────┼──────────────────────────────┘
+                │
+                ├──────────────────┬──────────────────┐
+                │                  │                  │
+                ↓                  ↓                  ↓
+    ┌──────────────────┐  ┌──────────────┐  ┌──────────────┐
+    │  Azure           │  │  Container   │  │  Container   │
+    │  Management API  │  │  Health      │  │  Health      │
+    │                  │  │  Endpoint    │  │  Endpoint    │
+    │  - List          │  │  /health     │  │  /health     │
+    │    containers    │  │              │  │              │
+    │  - Get metadata  │  │  HTTP GET    │  │  HTTP GET    │
+    │  - Get status    │  │  Response:   │  │  Response:   │
+    │                  │  │  {status:ok} │  │  {status:ok} │
+    └──────────────────┘  └──────────────┘  └──────────────┘
+                │
+                │ Returns container data
+                │
+                ↓
+    ┌─────────────────────────────────────────┐
+    │    Response Processing                  │
+    │    - Format as human-readable           │
+    │    - Split long messages                │
+    │    - Add emojis                         │
+    └────────┬────────────────────────────────┘
+             │
+             │ PRIVMSG #channel :💡 Found 2 containers...
+             │
+             ↓
+    ┌─────────────────────────────────────────┐
+    │         IRC Server                      │
+    └────────┬────────────────────────────────┘
+             │
+             ↓
+    ┌─────────────────┐
+    │   IRC User      │
+    │  (sees answer)  │
+    └─────────────────┘
+
+
+DETAILED COMPONENT BREAKDOWN:
+================================================================================
+
+1. IRC CONNECTION (miniirc library)
+   ┌────────────────────────────────────────┐
+   │  - Connects to IRC server              │
+   │  - Joins specified channels            │
+   │  - Listens for PRIVMSG events          │
+   │  - Handles PING/PONG                   │
+   │  - Sends responses back                │
+   └────────────────────────────────────────┘
+
+2. IRC AI HANDLER (src/irc_ai_handler.py)
+   ┌────────────────────────────────────────┐
+   │  Message Parsing:                      │
+   │    - Detect /ai prefix                 │
+   │    - Extract question text             │
+   │    - Identify user and channel         │
+   │                                         │
+   │  Rate Limiting:                        │
+   │    - Track last command per user       │
+   │    - 10 second cooldown (configurable) │
+   │    - Prevent spam                      │
+   │                                         │
+   │  Response Formatting:                  │
+   │    - Split long messages               │
+   │    - Add emojis (🤖 💡 ✅ ❌)          │
+   │    - Handle multi-line output          │
+   └────────────────────────────────────────┘
+
+3. AZURE CONTAINER MANAGER (src/azure_container_manager.py)
+   ┌────────────────────────────────────────┐
+   │  Authentication:                       │
+   │    - Service Principal credentials     │
+   │    - ClientSecretCredential            │
+   │    - Azure Management API access       │
+   │                                        │
+   │  Caching:                              │
+   │    - 30 second TTL                     │
+   │    - Reduces API calls                 │
+   │    - Improves response time            │
+   │                                        │
+   │  Container Queries:                    │
+   │    - List all containers               │
+   │    - Get specific container            │
+   │    - Filter by status/location         │
+   │                                        │
+   │  Health Checks:                        │
+   │    - HTTP GET to /health               │
+   │    - 5 second timeout                  │
+   │    - Response time tracking            │
+   │                                        │
+   │  Natural Language Processing:          │
+   │    - Keyword matching                  │
+   │    - Context-aware responses           │
+   │    - Human-readable formatting         │
+   └────────────────────────────────────────┘
+
+4. AZURE MANAGEMENT API
+   ┌────────────────────────────────────────┐
+   │  Endpoints Used:                       │
+   │    - container_groups.list_by_rg()     │
+   │    - container.instance_view           │
+   │                                        │
+   │  Data Retrieved:                       │
+   │    - Container name                    │
+   │    - IP address                        │
+   │    - Exposed ports                     │
+   │    - Status (Running/Stopped)          │
+   │    - Location/region                   │
+   │    - CPU/Memory allocation             │
+   │    - Restart count                     │
+   │    - Start time                        │
+   └────────────────────────────────────────┘
+
+
+DATA FLOW EXAMPLE:
+================================================================================
+
+User Input:
+  /ai what is the IP of web-api?
+
+Step 1: IRC Handler receives message
+  - Detects /ai prefix ✓
+  - Extracts question: "what is the IP of web-api?"
+  - Checks rate limit: OK ✓
+  - Sends "Processing..." message
+
+Step 2: Azure Container Manager processes query
+  - Checks cache: Valid (< 30s old) ✓
+  - Reads cached container data
+  - Searches for "web-api" in container names
+  - Finds match: {name: "web-api", ip: "20.123.45.67", ...}
+  - Formats response: "web-api: 20.123.45.67"
+
+Step 3: Response sent back
+  - IRC Handler receives answer
+  - Formats: "💡 web-api: 20.123.45.67"
+  - Sends to IRC channel
+  - User sees response (< 2 seconds total)
+
+
+AUTHENTICATION FLOW:
+================================================================================
+
+    ┌─────────────────┐
+    │  .env file      │
+    │  - CLIENT_ID    │
+    │  - SECRET       │
+    │  - TENANT_ID    │
+    └────────┬────────┘
+             │
+             ↓
+    ┌─────────────────────────────────┐
+    │  ClientSecretCredential         │
+    │  (Azure Identity SDK)           │
+    └────────┬────────────────────────┘
+             │
+             ↓
+    ┌─────────────────────────────────┐
+    │  Azure AD Authentication        │
+    │  - Validates credentials        │
+    │  - Issues access token          │
+    └────────┬────────────────────────┘
+             │
+             ↓
+    ┌─────────────────────────────────┐
+    │  Azure Management API           │
+    │  - Accepts token                │
+    │  - Checks RBAC permissions      │
+    │  - Returns container data       │
+    └─────────────────────────────────┘
+
+
+CACHING STRATEGY:
+================================================================================
+
+First Request:
+  User: /ai list containers
+    → Cache: MISS
+    → Azure API: Called
+    → Response time: ~2-3 seconds
+    → Cache: STORED (TTL: 30s)
+
+Second Request (within 30s):
+  User: /ai show IPs
+    → Cache: HIT
+    → Azure API: NOT called
+    → Response time: ~0.5 seconds
+    → Cache: USED
+
+After 30 seconds:
+  User: /ai check status
+    → Cache: EXPIRED
+    → Azure API: Called
+    → Response time: ~2-3 seconds
+    → Cache: REFRESHED
+
+
+RATE LIMITING:
+================================================================================
+
+User "alice" sends: /ai list containers
+  → Timestamp stored: 10:00:00
+  → Response sent ✓
+
+User "alice" sends: /ai show IPs (at 10:00:05)
+  → Check: 5 seconds since last command
+  → Cooldown: 10 seconds required
+  → Response: "Please wait 5s before next query"
+  → Request blocked ✗
+
+User "bob" sends: /ai check health (at 10:00:05)
+  → Check: No previous command from bob
+  → Response sent ✓
+  → Different users don't affect each other
+
+
+ERROR HANDLING:
+================================================================================
+
+Scenario 1: Azure API Timeout
+  → Catch exception
+  → Return cached data (if available)
+  → Send: "Using cached data (Azure API slow)"
+
+Scenario 2: Authentication Failure
+  → Catch exception
+  → Send: "I can't reach Azure right now — try again later"
+  → Log error for debugging
+
+Scenario 3: Container Health Check Timeout
+  → Catch timeout exception
+  → Send: "Health check timed out"
+  → Continue with other containers
+
+Scenario 4: No Containers Found
+  → Check if resource group is empty
+  → Send: "No containers found in resource group"
+  → Suggest checking configuration
+
+
+DEPLOYMENT OPTIONS:
+================================================================================
+
+Option 1: Local Machine
+  ┌──────────────────┐
+  │  Your Laptop     │
+  │  - Run bot       │
+  │  - Keep terminal │
+  │    open          │
+  └────────┬─────────┘
+           │ Internet
+           ↓
+  ┌──────────────────┐
+  │  Azure           │
+  └──────────────────┘
+
+Option 2: Azure VM
+  ┌──────────────────┐
+  │  Azure VM        │
+  │  - systemd       │
+  │  - Always on     │
+  │  - Fast access   │
+  └────────┬─────────┘
+           │ Azure VNet
+           ↓
+  ┌──────────────────┐
+  │  Containers      │
+  └──────────────────┘
+
+Option 3: Azure Container Instance
+  ┌──────────────────┐
+  │  Bot Container   │
+  │  - Serverless    │
+  │  - Cheap         │
+  └────────┬─────────┘
+           │ Azure VNet
+           ↓
+  ┌──────────────────┐
+  │  App Containers  │
+  └──────────────────┘
+
+
+SECURITY LAYERS:
+================================================================================
+
+Layer 1: Azure Authentication
+  - Service Principal with Reader role
+  - Minimum required permissions
+  - Credentials in .env (not in code)
+
+Layer 2: IRC Rate Limiting
+  - Per-user cooldown
+  - Prevents spam
+  - Protects Azure API quota
+
+Layer 3: Network Security
+  - NSG rules for container access
+  - Optional: Private VNet
+  - Optional: VPN for bot access
+
+Layer 4: Secret Management
+  - .env excluded from git
+  - No hardcoded credentials
+  - Optional: Azure Key Vault
+
+
+MONITORING POINTS:
+================================================================================
+
+1. Bot Health
+   - IRC connection status
+   - Message processing rate
+   - Error frequency
+
+2. Azure API
+   - Request count
+   - Response time
+   - Throttling events
+
+3. Container Health
+   - Health check success rate
+   - Response times
+   - Timeout frequency
+
+4. User Activity
+   - Commands per user
+   - Rate limit hits
+   - Popular queries
+
+================================================================================
