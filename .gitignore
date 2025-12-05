@@ -40,6 +40,10 @@ Thumbs.db
 # Config overrides
 .cord/local.json
 
+# User-specific settings (should not be committed)
+.cord/last_nick.json
+.cord/bookmarks.json
+
 # Azure credentials and secrets
 .env*
 .env.local
