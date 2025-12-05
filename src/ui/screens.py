@@ -23,6 +23,15 @@ LOGO = """
 [green]╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚══════╝[/][cyan]╚═╝     [/][green]╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝[/]
 """
 
+LOGO_HALLOWEEN = """
+[#ff6600]██████╗ ██╗  ██╗ ██████╗ ███████╗[/][#9966ff]██████╗ [/][#ff6600]██╗  ██╗ ██████╗ ██████╗ [/]
+[#ff6600]██╔══██╗██║  ██║██╔═══██╗██╔════╝[/][#9966ff]██╔══██╗[/][#ff6600]██║  ██║██╔═══██╗██╔══██╗[/]
+[#ff9900]██████╔╝███████║██║   ██║███████╗[/][#cc66ff]██████╔╝[/][#ff9900]███████║██║   ██║██████╔╝[/]
+[#ff9900]██╔═══╝ ██╔══██║██║   ██║╚════██║[/][#cc66ff]██╔═══╝ [/][#ff9900]██╔══██║██║   ██║██╔══██╗[/]
+[#ffcc00]██║     ██║  ██║╚██████╔╝███████║[/][#ff66ff]██║     [/][#ffcc00]██║  ██║╚██████╔╝██║  ██║[/]
+[#ffcc00]╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚══════╝[/][#ff66ff]╚═╝     [/][#ffcc00]╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝[/]
+"""
+
 
 def _load_last_nick() -> str:
     """Load the last used nickname from settings."""
@@ -68,9 +77,10 @@ class HomeScreen(Screen):
             self.server = server
             super().__init__()
 
-    def __init__(self, config: dict = None, **kwargs):
+    def __init__(self, config: dict = None, theme: str = "default", **kwargs):
         super().__init__(**kwargs)
         self.config = config or {}
+        self.theme = theme
         self.servers = self.config.get("servers", [{"name": "Libera.Chat", "host": "irc.libera.chat", "port": 6667, "ssl": False, "nick": "cord_user", "channels": []}])
         self.selected_server_idx = 0
         # Load last used nickname, or fall back to config/default
@@ -116,6 +126,24 @@ class HomeScreen(Screen):
 
     def _render_screen(self) -> str:
         """Render the entire retro screen."""
+        # Theme-specific colors
+        is_halloween = self.theme == "halloween"
+        
+        if is_halloween:
+            border_color = "#ff6600"
+            accent_color = "#ff9900"
+            text_color = "#ffcc00"
+            dim_color = "#996699"
+            logo = LOGO_HALLOWEEN
+            tagline = "[#9966ff]     🎃 Spooky IRC Terminal Magic 🎃[/]"
+        else:
+            border_color = "green"
+            accent_color = "cyan"
+            text_color = "white"
+            dim_color = "dim"
+            logo = LOGO
+            tagline = "[cyan]     Discord UX + IRC Protocol = Terminal Magic[/]"
+        
         # Selection indicators
         sel = lambda i: ">" if self.selected_row == i else " "
         
@@ -129,9 +157,9 @@ class HomeScreen(Screen):
             content_len = len(prefix) + len(value_str)
             padding = BOX_WIDTH - content_len
             spacer = " " * max(0, padding)
-            sel_colored = f"[cyan]{selector}[/]" if selector == ">" else " "
-            value_color = "[dim]" if disabled else "[cyan]"
-            return f"[green]│[/]  {sel_colored} [white]{label}:[/]     {value_color}{value_str}[/]{spacer}[green]│[/]"
+            sel_colored = f"[{accent_color}]{selector}[/]" if selector == ">" else " "
+            value_color = f"[{dim_color}]" if disabled else f"[{accent_color}]"
+            return f"[{border_color}]│[/]  {sel_colored} [{text_color}]{label}:[/]     {value_color}{value_str}[/]{spacer}[{border_color}]│[/]"
         
         # Server display - show custom server or preset with arrows
         if self.using_custom_server:
@@ -150,19 +178,31 @@ class HomeScreen(Screen):
         vol_bar = self._render_volume_bar(disabled=not self.audio_enabled)
         
         # Empty row helper
-        empty_row = f"[green]│[/]{' ' * BOX_WIDTH}[green]│[/]"
+        empty_row = f"[{border_color}]│[/]{' ' * BOX_WIDTH}[{border_color}]│[/]"
         
         # Error message line
         error_line = f"[red]{self.nick_error.center(47)}[/]" if self.nick_error else " " * 47
         
+        # Halloween decorations
+        if is_halloween:
+            separator = "[#ff6600]═══🎃═══🦇═══💀═══🕷️═══🎃═══🦇═══💀═══🕷️═══🎃═══[/]"
+            config_header = f"[{border_color}]┌────────────🎃 CONFIGURATION 🎃────────────┐[/]"
+            config_footer = f"[{border_color}]└───────────────────────────────────────────────┘[/]"
+            nav_hint = f"  [{border_color}]↑↓[/] Navigate   [{border_color}]←→[/] Adjust   [{border_color}]ENTER[/] Connect"
+        else:
+            separator = "[yellow]════════════════════════════════════════════════════[/]"
+            config_header = f"[{border_color}]┌──────────────── CONFIGURATION ────────────────┐[/]"
+            config_footer = f"[{border_color}]└───────────────────────────────────────────────┘[/]"
+            nav_hint = f"  [{border_color}]↑↓[/] Navigate   [{border_color}]←→[/] Adjust   [{border_color}]ENTER[/] Connect"
+        
         lines = [
             "",
-            LOGO,
-            "[yellow]════════════════════════════════════════════════════[/]",
-            "[cyan]     Discord UX + IRC Protocol = Terminal Magic[/]",
-            "[yellow]════════════════════════════════════════════════════[/]",
+            logo,
+            separator,
+            tagline,
+            separator,
             "",
-            "[green]┌──────────────── CONFIGURATION ────────────────┐[/]",
+            config_header,
             empty_row,
             format_row(sel(0), "SERVER  ", server_display, 20),
             empty_row,
@@ -172,11 +212,11 @@ class HomeScreen(Screen):
             empty_row,
             format_row(sel(3), "VOLUME  ", vol_bar, 18, disabled=not self.audio_enabled),
             empty_row,
-            "[green]└───────────────────────────────────────────────┘[/]",
+            config_footer,
             error_line,
-            "[yellow]────────────────────────────────────────────────────[/]",
-            "  [green]↑↓[/] Navigate   [green]←→[/] Adjust   [green]ENTER[/] Connect",
-            "[yellow]────────────────────────────────────────────────────[/]",
+            separator,
+            nav_hint,
+            separator,
         ]
         return "\n".join(lines)
 
@@ -195,6 +235,9 @@ class HomeScreen(Screen):
 
     def on_mount(self):
         """Focus and setup."""
+        # Apply theme class
+        if self.theme == "halloween":
+            self.add_class("halloween")
         self._update_display()
 
     def _update_display(self):
@@ -366,6 +409,8 @@ class TeletextScreen(Screen):
         self.frame_count = 0
         self.blink_state = False
         self.ticker_offset = 0
+        # Get theme from app
+        self.theme = getattr(app_ref, 'active_theme', 'default') if app_ref else 'default'
 
     def compose(self) -> ComposeResult:
         """Compose the teletext screen."""
@@ -490,31 +535,62 @@ class TeletextScreen(Screen):
         mem_mb = self._get_memory_mb()
         session_uptime = self._format_uptime(data['uptime'])
 
+        # Theme-specific colors
+        is_halloween = self.theme == "halloween"
+        
+        if is_halloween:
+            primary = "#ff6600"
+            secondary = "#ff9900"
+            accent = "#9966ff"
+            text = "#ffcc00"
+            highlight = "#ff6600"
+            ticker_bg = "#4a2a4a"
+        else:
+            primary = "green"
+            secondary = "cyan"
+            accent = "yellow"
+            text = "white"
+            highlight = "yellow"
+            ticker_bg = "blue"
+
         lines = []
 
         # Header line - PID, network stats, date and time
-        header = f"PID:{pid}  [cyan]↑{stats['network_sent_mb']:.1f}MB ↓{stats['network_recv_mb']:.1f}MB[/]  {day} {date} {month}  [cyan]{timestamp}[/]"
-        lines.append(f"[white]{header}[/]")
+        header = f"PID:{pid}  [{secondary}]↑{stats['network_sent_mb']:.1f}MB ↓{stats['network_recv_mb']:.1f}MB[/]  {day} {date} {month}  [{secondary}]{timestamp}[/]"
+        lines.append(f"[{text}]{header}[/]")
         lines.append("")
 
         # Logo banner - phosphor with highlighted middle P
         lines.append("")
-        lines.append("[green on black]██████╗ ██╗  ██╗ ██████╗ ███████╗[/][cyan on black]██████╗ [/][green on black]██╗  ██╗ ██████╗ ██████╗ [/]")
-        lines.append("[green on black]██╔══██╗██║  ██║██╔═══██╗██╔════╝[/][cyan on black]██╔══██╗[/][green on black]██║  ██║██╔═══██╗██╔══██╗[/]")
-        lines.append("[green on black]██████╔╝███████║██║   ██║███████╗[/][cyan on black]██████╔╝[/][green on black]███████║██║   ██║██████╔╝[/]")
-        lines.append("[green on black]██╔═══╝ ██╔══██║██║   ██║╚════██║[/][cyan on black]██╔═══╝ [/][green on black]██╔══██║██║   ██║██╔══██╗[/]")
-        lines.append("[green on black]██║     ██║  ██║╚██████╔╝███████║[/][cyan on black]██║     [/][green on black]██║  ██║╚██████╔╝██║  ██║[/]")
-        lines.append("[green on black]╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚══════╝[/][cyan on black]╚═╝     [/][green on black]╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝[/]")
+        if is_halloween:
+            lines.append(f"[{primary}]██████╗ ██╗  ██╗ ██████╗ ███████╗[/][{accent}]██████╗ [/][{primary}]██╗  ██╗ ██████╗ ██████╗ [/]")
+            lines.append(f"[{primary}]██╔══██╗██║  ██║██╔═══██╗██╔════╝[/][{accent}]██╔══██╗[/][{primary}]██║  ██║██╔═══██╗██╔══██╗[/]")
+            lines.append(f"[{secondary}]██████╔╝███████║██║   ██║███████╗[/][{accent}]██████╔╝[/][{secondary}]███████║██║   ██║██████╔╝[/]")
+            lines.append(f"[{secondary}]██╔═══╝ ██╔══██║██║   ██║╚════██║[/][{accent}]██╔═══╝ [/][{secondary}]██╔══██║██║   ██║██╔══██╗[/]")
+            lines.append(f"[{text}]██║     ██║  ██║╚██████╔╝███████║[/][{accent}]██║     [/][{text}]██║  ██║╚██████╔╝██║  ██║[/]")
+            lines.append(f"[{text}]╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚══════╝[/][{accent}]╚═╝     [/][{text}]╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝[/]")
+            lines.append("")
+            lines.append(f"[{accent}]🎃 SPOOKY TELETEXT DASHBOARD 🎃[/]")
+        else:
+            lines.append("[green on black]██████╗ ██╗  ██╗ ██████╗ ███████╗[/][cyan on black]██████╗ [/][green on black]██╗  ██╗ ██████╗ ██████╗ [/]")
+            lines.append("[green on black]██╔══██╗██║  ██║██╔═══██╗██╔════╝[/][cyan on black]██╔══██╗[/][green on black]██║  ██║██╔═══██╗██╔══██╗[/]")
+            lines.append("[green on black]██████╔╝███████║██║   ██║███████╗[/][cyan on black]██████╔╝[/][green on black]███████║██║   ██║██████╔╝[/]")
+            lines.append("[green on black]██╔═══╝ ██╔══██║██║   ██║╚════██║[/][cyan on black]██╔═══╝ [/][green on black]██╔══██║██║   ██║██╔══██╗[/]")
+            lines.append("[green on black]██║     ██║  ██║╚██████╔╝███████║[/][cyan on black]██║     [/][green on black]██║  ██║╚██████╔╝██║  ██║[/]")
+            lines.append("[green on black]╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚══════╝[/][cyan on black]╚═╝     [/][green on black]╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝[/]")
         lines.append("")
 
         # System Performance section - left-aligned, labels above bars
-        lines.append(f"[yellow]SYSTEM PERFORMANCE[/]")
+        if is_halloween:
+            lines.append(f"[{primary}]🦇 SYSTEM PERFORMANCE 🦇[/]")
+        else:
+            lines.append(f"[{accent}]SYSTEM PERFORMANCE[/]")
         lines.append("")
         
         # CPU - label above, bar below, left-aligned
         cpu_bar = self._render_bar(stats["cpu_percent"], 100, 50)
-        cpu_color = self._get_usage_color(stats["cpu_percent"])
-        lines.append(f"[white]CPU {stats['cpu_percent']:5.1f}%[/]")
+        cpu_color = self._get_usage_color(stats["cpu_percent"], is_halloween)
+        lines.append(f"[{text}]CPU {stats['cpu_percent']:5.1f}%[/]")
         lines.append(f"[{cpu_color}]{cpu_bar}[/]")
         lines.append("")
         
@@ -522,45 +598,66 @@ class TeletextScreen(Screen):
         max_mem_gb = 2.0
         mem_percent = (mem_mb / 1024) / max_mem_gb * 100
         mem_bar = self._render_bar(mem_percent, 100, 50)
-        mem_color = self._get_usage_color(mem_percent)
-        lines.append(f"[white]Memory {mem_mb:.1f}MB / 2048MB[/] [cyan]({mem_percent:.1f}%)[/]")
+        mem_color = self._get_usage_color(mem_percent, is_halloween)
+        lines.append(f"[{text}]Memory {mem_mb:.1f}MB / 2048MB[/] [{secondary}]({mem_percent:.1f}%)[/]")
         lines.append(f"[{mem_color}]{mem_bar}[/]")
         lines.append("")
 
         # Connection status section
-        lines.append(f"[green]IRC Connection[/]")
+        if is_halloween:
+            lines.append(f"[{primary}]💀 IRC Connection 💀[/]")
+        else:
+            lines.append(f"[{primary}]IRC Connection[/]")
         lines.append(f"")
         
         if data["connected"]:
-            status_icon = "[green]●[/]" if self.blink_state else "[green]○[/]"
-            lines.append(f"[yellow]CONNECTED TO SERVER[/] {status_icon}")
+            if is_halloween:
+                status_icon = f"[{primary}]🎃[/]" if self.blink_state else f"[{secondary}]👻[/]"
+            else:
+                status_icon = "[green]●[/]" if self.blink_state else "[green]○[/]"
+            lines.append(f"[{accent}]CONNECTED TO SERVER[/] {status_icon}")
         else:
-            status_icon = "[red]●[/]" if self.blink_state else "[red]○[/]"
-            lines.append(f"[yellow]DISCONNECTED[/] {status_icon}")
+            if is_halloween:
+                status_icon = "[red]💀[/]" if self.blink_state else "[red]☠️[/]"
+            else:
+                status_icon = "[red]●[/]" if self.blink_state else "[red]○[/]"
+            lines.append(f"[{accent}]DISCONNECTED[/] {status_icon}")
         lines.append(f"")
 
-        lines.append(f"[white]Server:[/]  [cyan]{data['server']}[/]")
-        lines.append(f"[white]Nick:[/]    [cyan]{data['nick']}[/]")
-        lines.append(f"[white]Session:[/] [cyan]{session_uptime}[/]")
+        lines.append(f"[{text}]Server:[/]  [{secondary}]{data['server']}[/]")
+        lines.append(f"[{text}]Nick:[/]    [{secondary}]{data['nick']}[/]")
+        lines.append(f"[{text}]Session:[/] [{secondary}]{session_uptime}[/]")
         lines.append("")
 
         # Channels section - simplified
-        lines.append(f"[yellow]CHANNELS[/]")
+        if is_halloween:
+            lines.append(f"[{primary}]🕷️ CHANNELS 🕷️[/]")
+        else:
+            lines.append(f"[{accent}]CHANNELS[/]")
         if data["channels"]:
             for channel in data["channels"][:5]:
-                marker = "[yellow]►[/]" if channel == data["current_channel"] else " "
-                lines.append(f"{marker} [white]{channel}[/]")
+                if is_halloween:
+                    marker = f"[{primary}]🎃[/]" if channel == data["current_channel"] else " "
+                else:
+                    marker = f"[{accent}]►[/]" if channel == data["current_channel"] else " "
+                lines.append(f"{marker} [{text}]{channel}[/]")
         else:
-            lines.append("[white]No channels joined[/]")
+            lines.append(f"[{text}]No channels joined[/]")
         lines.append("")
 
         # Scrolling ticker
         ticker = self._generate_ticker(70)
-        lines.append(f"[yellow on blue] ▶ {ticker} [/]")
+        if is_halloween:
+            lines.append(f"[{secondary} on {ticker_bg}] 🦇 {ticker} [/]")
+        else:
+            lines.append(f"[{accent} on {ticker_bg}] ▶ {ticker} [/]")
         lines.append("")
 
         # Simple footer
-        lines.append("[cyan]Press F1 to return to chat[/]")
+        if is_halloween:
+            lines.append(f"[{secondary}]Press F1 to escape the haunted dashboard 👻[/]")
+        else:
+            lines.append(f"[{secondary}]Press F1 to return to chat[/]")
 
         return "\n".join(lines)
     
@@ -590,14 +687,22 @@ class TeletextScreen(Screen):
         bar += "░" * empty_blocks
         return f"[{bar}]"
     
-    def _get_usage_color(self, percent: float) -> str:
+    def _get_usage_color(self, percent: float, is_halloween: bool = False) -> str:
         """Get color based on usage percentage."""
-        if percent < 50:
-            return "green"
-        elif percent < 75:
-            return "yellow"
+        if is_halloween:
+            if percent < 50:
+                return "#66ff66"  # Ghostly green
+            elif percent < 75:
+                return "#ff9900"  # Pumpkin orange
+            else:
+                return "#ff3333"  # Blood red
         else:
-            return "red"
+            if percent < 50:
+                return "green"
+            elif percent < 75:
+                return "yellow"
+            else:
+                return "red"
 
     async def _update_dashboard(self):
         """Periodically update the dashboard."""
@@ -611,6 +716,9 @@ class TeletextScreen(Screen):
 
     async def on_mount(self):
         """Start live updates when screen is mounted."""
+        # Apply theme class
+        if self.theme == "halloween":
+            self.add_class("halloween")
         self.update_task = asyncio.create_task(self._update_dashboard())
 
     async def on_unmount(self):
@@ -647,22 +755,60 @@ class KeysScreen(Screen):
         padding: 1 3;
         border: solid #5865F2;
     }
+    
+    KeysScreen.halloween {
+        background: rgba(26, 10, 26, 0.95);
+    }
+    
+    KeysScreen.halloween > Static {
+        background: #2d1f2d;
+        border: solid #ff6600;
+    }
     """
 
     def compose(self) -> ComposeResult:
         """Compose the keys screen."""
         yield Static(self._render_help())
 
+    def on_mount(self):
+        """Apply theme on mount."""
+        if hasattr(self.app, 'active_theme') and self.app.active_theme == "halloween":
+            self.add_class("halloween")
+
     def _render_help(self) -> str:
         """Render all help content."""
+        # Check theme
+        is_halloween = hasattr(self.app, 'active_theme') and self.app.active_theme == "halloween"
+        
+        if is_halloween:
+            header_color = "#ff6600"
+            section_color = "#9966ff"
+            key_color = "#ff9900"
+            cmd_color = "#ffcc00"
+            text_color = "#ffcc00"
+            dim_color = "#996699"
+        else:
+            header_color = "yellow"
+            section_color = "magenta"
+            key_color = "green"
+            cmd_color = "yellow"
+            text_color = "white"
+            dim_color = "dim"
+        
         lines = []
         
         # Header
-        lines.append("[bold yellow]PHOSPHOR HELP & SHORTCUTS[/]")
+        if is_halloween:
+            lines.append(f"[bold {header_color}]🎃 PHOSPHOR HELP & SHORTCUTS 🎃[/]")
+        else:
+            lines.append(f"[bold {header_color}]PHOSPHOR HELP & SHORTCUTS[/]")
         lines.append("")
         
         # Keyboard shortcuts section
-        lines.append("[bold magenta]KEYBOARD SHORTCUTS[/]")
+        if is_halloween:
+            lines.append(f"[bold {section_color}]🦇 KEYBOARD SHORTCUTS 🦇[/]")
+        else:
+            lines.append(f"[bold {section_color}]KEYBOARD SHORTCUTS[/]")
         
         shortcuts = [
             ("F1", "Toggle Teletext Dashboard"),
@@ -681,12 +827,15 @@ class KeysScreen(Screen):
         ]
         
         for key, desc in shortcuts:
-            lines.append(f"  [green]{key:12}[/] [white]{desc}[/]")
+            lines.append(f"  [{key_color}]{key:12}[/] [{text_color}]{desc}[/]")
         
         lines.append("")
         
         # Slash commands section
-        lines.append("[bold magenta]SLASH COMMANDS[/] [dim](type in message input)[/]")
+        if is_halloween:
+            lines.append(f"[bold {section_color}]💀 SLASH COMMANDS 💀[/] [{dim_color}](type in message input)[/]")
+        else:
+            lines.append(f"[bold {section_color}]SLASH COMMANDS[/] [{dim_color}](type in message input)[/]")
         
         commands = [
             ("/join #channel", "Join a channel"),
@@ -702,21 +851,28 @@ class KeysScreen(Screen):
         ]
         
         for cmd, desc in commands:
-            lines.append(f"  [yellow]{cmd:16}[/] [white]{desc}[/]")
+            lines.append(f"  [{cmd_color}]{cmd:16}[/] [{text_color}]{desc}[/]")
         
         lines.append("")
         
         # Command palette section
-        lines.append("[bold magenta]COMMAND PALETTE[/] [dim](Ctrl+P)[/]")
-        lines.append("  [white]Show Keyboard Shortcuts[/]")
-        lines.append("  [white]Adjust Volume[/]")
-        lines.append("  [white]Toggle Teletext Dashboard[/]")
-        lines.append("  [white]Search Channels[/]")
-        lines.append("  [white]Toggle Bookmark[/]")
+        if is_halloween:
+            lines.append(f"[bold {section_color}]🕷️ COMMAND PALETTE 🕷️[/] [{dim_color}](Ctrl+P)[/]")
+        else:
+            lines.append(f"[bold {section_color}]COMMAND PALETTE[/] [{dim_color}](Ctrl+P)[/]")
+        lines.append(f"  [{text_color}]Show Keyboard Shortcuts[/]")
+        lines.append(f"  [{text_color}]Adjust Volume[/]")
+        lines.append(f"  [{text_color}]Toggle Teletext Dashboard[/]")
+        lines.append(f"  [{text_color}]Search Channels[/]")
+        lines.append(f"  [{text_color}]Toggle Bookmark[/]")
+        lines.append(f"  [{text_color}]Theme: Default / Halloween 🎃[/]")
         lines.append("")
         
         # Footer
-        lines.append("[dim]Press ESC to close[/]")
+        if is_halloween:
+            lines.append(f"[{dim_color}]Press ESC to escape... if you dare 👻[/]")
+        else:
+            lines.append(f"[{dim_color}]Press ESC to close[/]")
         
         return "\n".join(lines)
 
@@ -751,6 +907,15 @@ class VolumeScreen(Screen):
         padding: 2 4;
         border: solid #5865F2;
     }
+    
+    VolumeScreen.halloween {
+        background: rgba(26, 10, 26, 0.95);
+    }
+    
+    VolumeScreen.halloween > Static {
+        background: #2d1f2d;
+        border: solid #ff6600;
+    }
     """
 
     def __init__(self, **kwargs):
@@ -771,12 +936,19 @@ class VolumeScreen(Screen):
 
     def on_mount(self):
         """Load settings when mounted."""
+        # Apply theme
+        if hasattr(self.app, 'active_theme') and self.app.active_theme == "halloween":
+            self.add_class("halloween")
         self._load_settings()
         self._update_display()
 
     def _render_volume_bar(self) -> str:
         """Render the volume bar."""
+        is_halloween = hasattr(self.app, 'active_theme') and self.app.active_theme == "halloween"
+        
         if not self.audio_enabled:
+            if is_halloween:
+                return "[#996699]░░░░░░░░░░░░░░░░░░░░[/] [red]💀 MUTED[/]"
             return "[dim]░░░░░░░░░░░░░░░░░░░░[/] [red]MUTED[/]"
         
         filled = int(self.volume * 20)
@@ -784,34 +956,65 @@ class VolumeScreen(Screen):
         percent = int(self.volume * 100)
         
         # Color based on volume level
-        if percent < 30:
-            color = "green"
-        elif percent < 70:
-            color = "yellow"
+        if is_halloween:
+            if percent < 30:
+                color = "#66ff66"
+            elif percent < 70:
+                color = "#ff9900"
+            else:
+                color = "#ff3333"
+            text_color = "#ffcc00"
         else:
-            color = "red"
+            if percent < 30:
+                color = "green"
+            elif percent < 70:
+                color = "yellow"
+            else:
+                color = "red"
+            text_color = "white"
         
-        return f"[{color}]{bar}[/] [white]{percent:3d}%[/]"
+        return f"[{color}]{bar}[/] [{text_color}]{percent:3d}%[/]"
 
     def _render_volume(self) -> str:
         """Render the volume control UI."""
+        is_halloween = hasattr(self.app, 'active_theme') and self.app.active_theme == "halloween"
+        
+        if is_halloween:
+            header_color = "#ff6600"
+            text_color = "#ffcc00"
+            dim_color = "#996699"
+            on_icon = "🎃"
+            off_icon = "💀"
+        else:
+            header_color = "yellow"
+            text_color = "white"
+            dim_color = "dim"
+            on_icon = "●"
+            off_icon = "●"
+        
         lines = []
         
-        lines.append("[bold yellow]VOLUME CONTROL[/]")
+        if is_halloween:
+            lines.append(f"[bold {header_color}]🔊 VOLUME CONTROL 🔊[/]")
+        else:
+            lines.append(f"[bold {header_color}]VOLUME CONTROL[/]")
         lines.append("")
         lines.append(self._render_volume_bar())
         lines.append("")
         
         # Audio toggle
         if self.audio_enabled:
-            lines.append("[green]●[/] [white]Audio ON[/]")
+            if is_halloween:
+                lines.append(f"[#66ff66]{on_icon}[/] [{text_color}]Audio ON[/]")
+            else:
+                lines.append(f"[green]{on_icon}[/] [{text_color}]Audio ON[/]")
         else:
-            lines.append("[red]●[/] [white]Audio OFF (Muted)[/]")
+            lines.append(f"[red]{off_icon}[/] [{text_color}]Audio OFF (Muted)[/]")
         
         lines.append("")
-        lines.append("[dim]←/→ or ↑/↓[/]  [white]Adjust volume[/]")
-        lines.append("[dim]M[/]          [white]Toggle mute[/]")
-        lines.append("[dim]ESC/Enter[/]  [white]Close[/]")
+        lines.append(f"[{dim_color}]←/→ or ↑/↓[/]  [{text_color}]Adjust volume[/]")
+        lines.append(f"[{dim_color}]M[/]          [{text_color}]Toggle mute[/]")
+        lines.append(f"[{dim_color}]ESC/Enter[/]  [{text_color}]Close[/]")
         
         return "\n".join(lines)
 

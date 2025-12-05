@@ -50,6 +50,9 @@ class ChannelSearchScreen(ModalScreen):
     
     def on_mount(self):
         """Focus the input when mounted."""
+        # Apply theme
+        if hasattr(self.app, 'active_theme') and self.app.active_theme == "halloween":
+            self.add_class("halloween")
         self.query_one("#channel-search-input", Input).focus()
         self.update_suggestions("")
     

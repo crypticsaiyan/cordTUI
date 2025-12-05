@@ -1,7 +1,178 @@
 /* Discord-inspired theme */
+/* Theme variables are controlled by app.py theme system */
 
 Screen {
     background: #36393f;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HALLOWEEN THEME - Spooky orange, purple, and black
+   Apply .halloween class to Screen for Halloween mode
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+Screen.halloween {
+    background: #1a0a1a;
+}
+
+.halloween #sidebar {
+    background: #2d1f2d;
+    border: solid #ff6600;
+}
+
+.halloween #sidebar:focus-within {
+    border: solid #ff9900;
+}
+
+.halloween #chat-container {
+    border: solid #4a2a4a;
+}
+
+.halloween #chat-container:focus-within {
+    border: solid #ff6600;
+}
+
+.halloween #chat-pane {
+    background: #1a0a1a;
+}
+
+.halloween #member-list {
+    background: #2d1f2d;
+    border: solid #4a2a4a;
+}
+
+.halloween #member-list:focus-within {
+    border: solid #ff6600;
+}
+
+.halloween #input-bar {
+    background: #3d2a3d;
+    border: solid #4a2a4a;
+}
+
+.halloween #input-bar:focus {
+    border: solid #ff6600;
+}
+
+.halloween Input {
+    background: #3d2a3d;
+    color: #ffcc00;
+}
+
+.halloween .channel-item {
+    color: #cc99ff;
+}
+
+.halloween .channel-item:hover {
+    background: #4a2a4a;
+    color: #ff9900;
+}
+
+.halloween .channel-active {
+    color: #ff6600;
+    background: #4a2a4a;
+}
+
+.halloween .dm-item {
+    color: #9966ff;
+}
+
+.halloween .dm-item:hover {
+    background: #4a2a4a;
+    color: #ff9900;
+}
+
+.halloween .dm-unread {
+    color: #ff6600;
+    text-style: bold;
+}
+
+.halloween .unread {
+    color: #ff9900;
+    text-style: bold;
+}
+
+.halloween .member-online {
+    color: #66ff66;
+}
+
+.halloween .member-offline {
+    color: #666699;
+}
+
+.halloween #member-hint {
+    color: #996699;
+}
+
+.halloween .message-author {
+    color: #ff6600;
+    text-style: bold;
+}
+
+.halloween .system-message {
+    color: #9966ff;
+    text-style: italic;
+}
+
+.halloween .embed {
+    background: #2d1f2d;
+    border-left: thick #ff6600;
+}
+
+.halloween .embed-success {
+    border-left: thick #66ff66;
+}
+
+.halloween .embed-error {
+    border-left: thick #ff3333;
+}
+
+.halloween Header {
+    background: #2d1f2d;
+    color: #ff6600;
+}
+
+.halloween Footer {
+    background: #2d1f2d;
+    color: #ff9900;
+}
+
+/* Halloween Command Palette */
+.halloween CommandPalette > Vertical {
+    background: #2d1f2d;
+    border: tall #ff6600;
+}
+
+.halloween CommandPalette > Vertical > Input {
+    background: #3d2a3d;
+    color: #ffcc00;
+}
+
+.halloween CommandPalette OptionList {
+    background: #2d1f2d;
+    scrollbar-color: #ff6600;
+}
+
+.halloween CommandPalette OptionList > .option-list--option {
+    color: #cc99ff;
+}
+
+.halloween CommandPalette OptionList > .option-list--option-highlighted {
+    background: #ff6600;
+    color: #000000;
+}
+
+.halloween CommandPalette OptionList > .option-list--option-hover {
+    background: #4a2a4a;
+}
+
+/* Halloween Slash Command Palette */
+.halloween #command-palette {
+    background: #2d1f2d;
+    border: solid #ff6600;
+}
+
+.halloween #command-palette .command-item.highlighted {
+    background: #ff6600;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -257,6 +428,26 @@ TeletextScreen Footer {
     height: 1;
 }
 
+/* Halloween Teletext */
+TeletextScreen.halloween {
+    background: #1a0a1a;
+}
+
+TeletextScreen.halloween #teletext-container {
+    background: #1a0a1a;
+}
+
+TeletextScreen.halloween #dashboard-content {
+    background: #1a0a1a;
+    color: #ff9900;
+    border: solid #ff6600;
+}
+
+TeletextScreen.halloween Footer {
+    background: #1a0a1a;
+    color: #ff6600;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    HOME SCREEN - Retro Terminal Style
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -303,6 +494,30 @@ HomeScreen {
 
 #nick-input:focus {
     border: solid #00ff00;
+}
+
+/* Halloween Home Screen */
+HomeScreen.halloween {
+    background: #1a0a1a;
+}
+
+HomeScreen.halloween #home-container {
+    background: #1a0a1a;
+}
+
+HomeScreen.halloween #retro-display {
+    background: #1a0a1a;
+    color: #ff6600;
+}
+
+HomeScreen.halloween #nick-input {
+    background: #2d1f2d;
+    color: #ff9900;
+    border: solid #ff6600;
+}
+
+HomeScreen.halloween #nick-input:focus {
+    border: solid #ff9900;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -363,6 +578,90 @@ ChannelSearchScreen {
 .channel-item:hover {
     background: #003300;
     color: #00ff00;
+}
+
+/* Halloween Channel Search */
+ChannelSearchScreen.halloween {
+    background: #1a0a1a;
+}
+
+ChannelSearchScreen.halloween #channel-search-dialog {
+    background: #1a0a1a;
+    border: solid #ff6600;
+}
+
+ChannelSearchScreen.halloween .dialog-title {
+    color: #ff6600;
+    background: #1a0a1a;
+}
+
+ChannelSearchScreen.halloween .section-header {
+    color: #ff9900;
+}
+
+ChannelSearchScreen.halloween #channel-search-input {
+    background: #2d1f2d;
+    color: #ff9900;
+    border: solid #ff6600;
+}
+
+ChannelSearchScreen.halloween #channel-search-input:focus {
+    border: solid #ff9900;
+}
+
+ChannelSearchScreen.halloween #channel-list {
+    border: solid #ff6600;
+    background: #2d1f2d;
+}
+
+ChannelSearchScreen.halloween .channel-item {
+    color: #ff9900;
+}
+
+ChannelSearchScreen.halloween .channel-item:hover {
+    background: #4a2a4a;
+    color: #ff6600;
+}
+
+ChannelSearchScreen.halloween #suggestions-list {
+    border: solid #ff6600;
+    background: #2d1f2d;
+}
+
+ChannelSearchScreen.halloween #suggestions-list:focus {
+    border: solid #ff9900;
+}
+
+ChannelSearchScreen.halloween .suggestion-item {
+    color: #ff9900;
+}
+
+ChannelSearchScreen.halloween .suggestion-item:hover {
+    background: #4a2a4a;
+}
+
+ChannelSearchScreen.halloween ListItem {
+    color: #ff9900;
+}
+
+ChannelSearchScreen.halloween ListItem:hover {
+    background: #4a2a4a;
+}
+
+ChannelSearchScreen.halloween ListView > ListItem.-highlight {
+    background: #ff6600;
+    color: #000000;
+}
+
+ChannelSearchScreen.halloween Button {
+    background: #2d1f2d;
+    color: #ff9900;
+    border: solid #ff6600;
+}
+
+ChannelSearchScreen.halloween Button:hover {
+    background: #4a2a4a;
+    border: solid #ff9900;
 }
 
 Button {

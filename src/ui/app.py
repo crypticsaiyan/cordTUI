@@ -57,6 +57,8 @@ class PhosphorCommands(Provider):
             ("Toggle Teletext Dashboard", "Open the retro teletext dashboard", self._toggle_teletext),
             ("Search Channels", "Search and join IRC channels", self._search_channels),
             ("Toggle Bookmark", "Bookmark or unbookmark current channel", self._toggle_bookmark),
+            ("Theme: Default", "Switch to default Discord-inspired theme", self._theme_default),
+            ("Theme: Halloween 🎃", "Switch to spooky Halloween theme", self._theme_halloween),
         ]
 
     async def search(self, query: str) -> Hits:
@@ -96,6 +98,16 @@ class PhosphorCommands(Provider):
         if hasattr(self.app, 'action_toggle_bookmark'):
             self.app.action_toggle_bookmark()
 
+    async def _theme_default(self) -> None:
+        """Switch to default theme."""
+        if hasattr(self.app, 'set_theme'):
+            self.app.set_theme("default")
+
+    async def _theme_halloween(self) -> None:
+        """Switch to Halloween theme."""
+        if hasattr(self.app, 'set_theme'):
+            self.app.set_theme("halloween")
+
 
 class Phosphor(App):
     """The main phosphor application."""
@@ -117,6 +129,9 @@ class Phosphor(App):
         Binding("ctrl+c", "quit", "Quit", show=True),
     ]
     
+    # Available themes
+    THEMES = ["default", "halloween"]
+    
     # Track which section is focused: 0=sidebar, 1=chat, 2=members
     focused_section = 0
     
@@ -136,6 +151,7 @@ class Phosphor(App):
         self.audio = None
         self.input_bar = None
         self.chat_pane = None
+        self.active_theme = self._load_theme()  # Load saved theme
         
         # Set up wormhole callback
         self.wormhole.set_status_callback(self._on_wormhole_status)
@@ -171,6 +187,54 @@ class Phosphor(App):
             if self.chat_pane:
                 self.chat_pane.add_message("System", f"Failed to save bookmarks: {e}", is_system=True)
     
+    def _load_theme(self) -> str:
+        """Load saved theme from config."""
+        theme_path = Path(".phosphor/theme.json")
+        if theme_path.exists():
+            try:
+                with open(theme_path) as f:
+                    data = json.load(f)
+                    return data.get("theme", "default")
+            except Exception:
+                pass
+        return "default"
+    
+    def _save_theme(self, theme: str):
+        """Save theme preference."""
+        theme_path = Path(".phosphor/theme.json")
+        theme_path.parent.mkdir(exist_ok=True)
+        try:
+            with open(theme_path, 'w') as f:
+                json.dump({"theme": theme}, f, indent=2)
+        except Exception:
+            pass
+    
+    def set_theme(self, theme: str):
+        """Set the application theme."""
+        if theme not in self.THEMES:
+            theme = "default"
+        
+        self.active_theme = theme
+        self._save_theme(theme)
+        self._apply_theme()
+        
+        if self.chat_pane:
+            if theme == "halloween":
+                self.chat_pane.add_message("System", "🎃 Halloween theme activated! Spooky!", is_system=True)
+            else:
+                self.chat_pane.add_message("System", "Theme switched to default", is_system=True)
+    
+    def _apply_theme(self):
+        """Apply the current theme to all screens."""
+        # Remove all theme classes first
+        for theme_class in self.THEMES:
+            if theme_class != "default":
+                self.remove_class(theme_class)
+        
+        # Apply new theme class (default has no class)
+        if self.active_theme != "default":
+            self.add_class(self.active_theme)
+    
     def compose(self) -> ComposeResult:
         """Compose the main UI layout."""
         yield Header()
@@ -196,7 +260,9 @@ class Phosphor(App):
     
     async def on_mount(self):
         """Show home screen first."""
-        self.push_screen(HomeScreen(config=self.config))
+        # Apply saved theme
+        self._apply_theme()
+        self.push_screen(HomeScreen(config=self.config, theme=self.active_theme))
 
     def on_home_screen_settings_confirmed(self, event: HomeScreen.SettingsConfirmed):
         """Handle settings from home screen."""
