@@ -488,11 +488,12 @@ class TeletextScreen(Screen):
         
         pid = os.getpid()
         mem_mb = self._get_memory_mb()
+        session_uptime = self._format_uptime(data['uptime'])
 
         lines = []
 
-        # Header line - PID, memory, date and time
-        header = f"PID:{pid}  MEM:{mem_mb:.1f}MB  {day} {date} {month}  [cyan]{timestamp}[/]"
+        # Header line - PID, network stats, date and time
+        header = f"PID:{pid}  [cyan]↑{stats['network_sent_mb']:.1f}MB ↓{stats['network_recv_mb']:.1f}MB[/]  {day} {date} {month}  [cyan]{timestamp}[/]"
         lines.append(f"[white]{header}[/]")
         lines.append("")
 
@@ -517,23 +518,13 @@ class TeletextScreen(Screen):
         lines.append(f"[{cpu_color}]{cpu_bar}[/]")
         lines.append("")
         
-        # Memory - label above, bar below, left-aligned
-        mem_bar = self._render_bar(stats["memory_percent"], 100, 50)
-        mem_color = self._get_usage_color(stats["memory_percent"])
-        lines.append(f"[white]Memory {stats['memory_percent']:5.1f}%[/] [cyan]({stats['memory_used_gb']:.1f}/{stats['memory_total_gb']:.1f}GB)[/]")
+        # Program Memory - show program memory out of 2GB
+        max_mem_gb = 2.0
+        mem_percent = (mem_mb / 1024) / max_mem_gb * 100
+        mem_bar = self._render_bar(mem_percent, 100, 50)
+        mem_color = self._get_usage_color(mem_percent)
+        lines.append(f"[white]Memory {mem_mb:.1f}MB / 2048MB[/] [cyan]({mem_percent:.1f}%)[/]")
         lines.append(f"[{mem_color}]{mem_bar}[/]")
-        lines.append("")
-        
-        # Disk - label above, bar below, left-aligned
-        disk_bar = self._render_bar(stats["disk_usage_percent"], 100, 50)
-        disk_color = self._get_usage_color(stats["disk_usage_percent"])
-        lines.append(f"[white]Disk {stats['disk_usage_percent']:5.1f}%[/]")
-        lines.append(f"[{disk_color}]{disk_bar}[/]")
-        lines.append("")
-        
-        # Network stats - left-aligned
-        lines.append(f"[white]Network[/]")
-        lines.append(f"[cyan]↑ TX {stats['network_sent_mb']:8.1f} MB  ↓ RX {stats['network_recv_mb']:8.1f} MB[/]")
         lines.append("")
 
         # Connection status section
@@ -548,9 +539,9 @@ class TeletextScreen(Screen):
             lines.append(f"[yellow]DISCONNECTED[/] {status_icon}")
         lines.append(f"")
 
-        lines.append(f"[white]Server:[/] [cyan]{data['server']}[/]")
-        lines.append(f"[white]Nick:[/]   [cyan]{data['nick']}[/]")
-        lines.append(f"[white]Uptime:[/] [cyan]{self._format_uptime(data['uptime'])}[/]")
+        lines.append(f"[white]Server:[/]  [cyan]{data['server']}[/]")
+        lines.append(f"[white]Nick:[/]    [cyan]{data['nick']}[/]")
+        lines.append(f"[white]Session:[/] [cyan]{session_uptime}[/]")
         lines.append("")
 
         # Channels section - simplified

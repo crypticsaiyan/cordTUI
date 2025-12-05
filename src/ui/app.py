@@ -156,20 +156,18 @@ class Phosphor(App):
         # Store selected server config for later use
         self.selected_server = server
         
-        # Add random suffix to nick to reduce collision chance
-        base_nick = event.nick
-        random_suffix = random.randint(100, 999)
-        nick_with_suffix = f"{base_nick}{random_suffix}"
+        # Use the nick as-is - IRC client will handle conflicts automatically
+        # by appending a random suffix if the nick is already taken (433 error)
+        nick = event.nick.strip()
         # Truncate if too long (IRC max is usually 30)
-        if len(nick_with_suffix) > 30:
-            max_base = 30 - len(str(random_suffix))
-            nick_with_suffix = f"{base_nick[:max_base]}{random_suffix}"
+        if len(nick) > 30:
+            nick = nick[:30]
         
-        # Initialize IRC client with chosen server and nick (with random suffix)
+        # Initialize IRC client with chosen server and nick
         self.irc = IRCClient(
             host=server["host"],
             port=server["port"],
-            nick=nick_with_suffix,
+            nick=nick,
             ssl=server.get("ssl", False)
         )
         self.irc.set_message_callback(self._on_irc_message)
