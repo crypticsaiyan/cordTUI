@@ -169,33 +169,20 @@ class IRCClient:
             def handle_unknown_command(irc, hostmask, args):
                 print(f"[IRC DEBUG] Unknown command error: {args}")
             
-            @client.Handler('433', colon=False)  # ERR_NICKNAMEINUSE - override miniirc's handler
+            @client.Handler('433')  # ERR_NICKNAMEINUSE
             def handle_nick_in_use(irc, hostmask, args):
-                """Handle nickname already in use - try with random number suffix."""
+                """Handle nickname already in use - try with new random suffix."""
                 import random
-                print(f"[IRC DEBUG] Nickname in use: {args}")
+                print(f"[IRC DEBUG] Nickname in use: {args}, current: {self.nick}")
                 self._nick_attempt += 1
-                if self._nick_attempt <= self._max_nick_attempts:
-                    # Generate random 3-4 digit number
-                    random_suffix = random.randint(100, 9999)
-                    new_nick = f"{self.original_nick}{random_suffix}"
-                    # Truncate if too long (IRC max is usually 30)
-                    if len(new_nick) > 30:
-                        suffix = str(random_suffix)
-                        max_base = 30 - len(suffix)
-                        new_nick = f"{self.original_nick[:max_base]}{suffix}"
-                    print(f"[IRC DEBUG] Trying new nick: {new_nick}")
-                    self.nick = new_nick
-                    # Update miniirc's internal nick tracking to prevent it from
-                    # trying its own nick collision handling (appending '_')
-                    irc._current_nick = new_nick
-                    irc._desired_nick = new_nick
-                    irc._keepnick_active = False  # Don't try to reclaim original nick
-                    irc.quote('NICK', new_nick, force=True)
-                else:
-                    print(f"[IRC DEBUG] Max nick attempts reached")
-                    if self.nick_callback:
-                        self.nick_callback(None, False, "Could not find available nickname")
+                # Generate new random suffix and try again
+                random_suffix = random.randint(1000, 9999)
+                # Use a shorter base to ensure we have room for suffix
+                base = self.original_nick[:20] if len(self.original_nick) > 20 else self.original_nick
+                new_nick = f"{base}{random_suffix}"
+                print(f"[IRC DEBUG] Trying new nick: {new_nick}")
+                self.nick = new_nick
+                irc.quote('NICK', new_nick, force=True)
             
             @client.Handler('001')  # RPL_WELCOME - nickname confirmed
             def handle_welcome(irc, hostmask, args):
@@ -291,6 +278,9 @@ class IRCClient:
     
     def is_nick_confirmed(self) -> bool:
         """Check if nickname has been confirmed by server."""
+        # Also check if miniirc thinks we're connected (fallback)
+        if self.client and hasattr(self.client, 'connected') and self.client.connected:
+            return True
         return self._nick_confirmed
     
     def get_confirmed_nick(self) -> str:

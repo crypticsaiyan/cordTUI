@@ -144,6 +144,8 @@ class CordTUI(App):
 
     def on_home_screen_settings_confirmed(self, event: HomeScreen.SettingsConfirmed):
         """Handle settings from home screen."""
+        import random
+        
         # Use the selected server from the event
         server = event.server
         
@@ -154,11 +156,20 @@ class CordTUI(App):
         # Store selected server config for later use
         self.selected_server = server
         
-        # Initialize IRC client with chosen server and nick
+        # Add random suffix to nick to reduce collision chance
+        base_nick = event.nick
+        random_suffix = random.randint(100, 999)
+        nick_with_suffix = f"{base_nick}{random_suffix}"
+        # Truncate if too long (IRC max is usually 30)
+        if len(nick_with_suffix) > 30:
+            max_base = 30 - len(str(random_suffix))
+            nick_with_suffix = f"{base_nick[:max_base]}{random_suffix}"
+        
+        # Initialize IRC client with chosen server and nick (with random suffix)
         self.irc = IRCClient(
             host=server["host"],
             port=server["port"],
-            nick=event.nick,
+            nick=nick_with_suffix,
             ssl=server.get("ssl", False)
         )
         self.irc.set_message_callback(self._on_irc_message)
