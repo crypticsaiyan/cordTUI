@@ -253,10 +253,8 @@ class CordTUI(App):
     
     def _on_members_update(self, channel: str, members: list[str]):
         """Handle member list updates."""
-        # Only update if this is the current channel
         if channel == self.current_channel:
-            # Use post_message for thread-safe UI updates
-            self.post_message(MemberListUpdate(channel, members))
+            self.call_from_thread(self._update_member_list_ui, members)
     
     def _on_channel_list_received(self, channels: list):
         """Handle channel list from IRC server."""
@@ -272,6 +270,11 @@ class CordTUI(App):
     def _on_wormhole_status(self, status: str):
         """Handle wormhole status updates."""
         self.call_from_thread(self.chat_pane.add_message, "Wormhole", status, is_system=True)
+    
+    def _update_member_list_ui(self, members: list[str]):
+        """Update member list UI - called from main thread."""
+        if self.member_list:
+            self.member_list.update_members(members)
     
     def on_member_list_update(self, event: MemberListUpdate):
         """Handle member list updates."""
