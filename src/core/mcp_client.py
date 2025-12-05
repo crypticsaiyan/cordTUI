@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Dict, Any
 
 from src.core.devops_health_bot import DevOpsHealthBot
+from src.core.azure_bot_client import AzureBotClient
 
 
 class MCPClient:
@@ -17,6 +18,7 @@ class MCPClient:
             "analyze-db": self._analyze_db,
             "docker-stats": self._docker_stats,
             "docker-health": self._docker_health,
+            "azure-containers": self._azure_containers,
             "system-info": self._system_info,
             "list-files": self._list_files,
             "read-file": self._read_file,
@@ -25,15 +27,38 @@ class MCPClient:
         
         # Initialize DevOps Health Bot
         self.health_bot = DevOpsHealthBot(mcp_tools={})
+        
+        # Initialize Azure Bot Client
+        self.azure_client = AzureBotClient()
+        
+        # Print Azure status
+        if self.azure_client.is_available():
+            print(f"🔵 Azure integration: {self.azure_client.get_status()}")
+        else:
+            print("⚪ Azure integration: Not configured (using Docker fallback)")
     
     async def execute(self, prompt: str, args: Dict[str, Any] = None) -> Dict[str, Any]:
         """Execute an MCP command based on natural language prompt."""
         # Parse the prompt to determine which tool to use
         prompt_lower = prompt.lower().strip()
         
+        # PRIORITY 1: If Azure is configured, use it for container queries
+        if self.azure_client.is_available():
+            # Check if this is a container-related query
+            container_keywords = ["container", "list", "ip", "port", "status", "running", 
+                                "health", "check", "show", "what", "region", "location",
+                                "resource", "cpu", "memory", "azure"]
+            
+            # If empty prompt or contains container keywords, use Azure
+            if not prompt_lower or any(keyword in prompt_lower for keyword in container_keywords):
+                # Route to Azure
+                return await self.azure_client.query(prompt)
+        
+        # FALLBACK: If Azure not configured or query is not container-related
+        
         # If empty prompt or generic health check, default to docker health
         if not prompt_lower or prompt_lower in ["health", "check", "status"]:
-            # Default behavior: check Docker health
+            # Default behavior: check Docker health (fallback)
             return await self._docker_health({"prompt": prompt_lower})
         
         # Check if this is a question (starts with what, why, how, explain, etc.)
@@ -46,8 +71,8 @@ class MCPClient:
         
         # Match prompt to tools
         # Be more specific about Docker health checks
-        if any(keyword in prompt_lower for keyword in ["docker", "container"]):
-            # Docker-related queries
+        if any(keyword in prompt_lower for keyword in ["docker"]):
+            # Docker-related queries (explicit)
             if "stats" in prompt_lower:
                 tool = "docker-stats"
             else:
@@ -303,19 +328,21 @@ docker restart <container-name>
     
     def _get_help_text(self) -> str:
         """Get help text for available commands."""
-        return """🤖 DevOps Health Bot - Available Commands:
-
+        azure_status = ""
+        if self.azure_client.is_available():
+            azure_status = "\n**🔵 Azure Container Instances (Active):**\n• /ai list containers - List all Azure containers\n• /ai what is the IP of <name>? - Get container IP\n• /ai check health - Check container health\n• /ai show status - Show container status\n• /ai what ports are exposed? - List exposed ports\n"
+        
+        return f"""🤖 DevOps Health Bot - Available Commands:
+{azure_status}
 **Docker Health Checks:**
-• /ai - Check all Docker containers
-• /ai prod - Check production containers
-• /ai staging web - Check staging web containers
-• /ai docker health - Full health report
+• /ai docker - Check all Docker containers
+• /ai docker prod - Check production containers
+• /ai docker staging web - Check staging web containers
 
 **Questions I Can Answer:**
 • /ai private explain what "healthy" means
 • /ai private explain restart counts
 • /ai private explain how to check logs
-• /ai private explain docker basics
 
 **File Operations:**
 • /ai list-files [path] - List directory contents
@@ -327,12 +354,12 @@ docker restart <container-name>
 • /ai system-info - System information
 
 **Examples:**
-• /ai
-• /ai prod api
+• /ai list containers (Azure if configured, Docker otherwise)
+• /ai docker prod api (explicitly Docker)
 • /ai private explain healthy
 • /ai list-files /var/log
 
-**Note:** I'm specialized in DevOps monitoring, not a general AI assistant."""
+**Note:** {'Azure integration active! Container queries go to Azure.' if self.azure_client.is_available() else 'Azure not configured. Using Docker fallback.'}"""
     
     async def _analyze_db(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze database (dummy implementation)."""
@@ -342,6 +369,11 @@ docker restart <container-name>
             "connections": 15,
             "query_time_avg": "23ms"
         }
+    
+    async def _azure_containers(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        """Query Azure Container Instances."""
+        prompt = args.get("prompt", "list containers")
+        return await self.azure_client.query(prompt)
     
     async def _docker_health(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Check Docker container health using DevOps Health Bot."""

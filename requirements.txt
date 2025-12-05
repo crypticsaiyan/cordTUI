@@ -6,3 +6,10 @@ rich>=13.7.0
 plotext>=5.2.8
 aiofiles>=23.2.1
 psutil>=5.9.0
+# Azure integration for AI IRC bot
+azure-identity>=1.15.0
+azure-mgmt-containerinstance>=10.1.0
+azure-mgmt-resource>=23.0.0
+flask>=3.0.0
+python-dotenv>=1.0.0
+requests>=2.31.0

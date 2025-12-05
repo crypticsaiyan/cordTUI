@@ -1,0 +1,171 @@
+╔════════════════════════════════════════════════════════════════╗
+║              UNIFIED SETUP - ONE COMMAND                       ║
+╚════════════════════════════════════════════════════════════════╝
+
+GOOD NEWS:
+  ✅ Everything is now in ONE setup script!
+  ✅ No separate Azure bot setup needed!
+  ✅ Azure integration built into main app!
+
+
+╔════════════════════════════════════════════════════════════════╗
+║              QUICK SETUP (3 STEPS)                             ║
+╚════════════════════════════════════════════════════════════════╝
+
+STEP 1: Run Setup
+────────────────────────────────────────────────────────────────
+  ./setup.sh
+
+  This installs everything:
+    ✓ Virtual environment
+    ✓ All dependencies
+    ✓ Azure SDK
+    ✓ Creates .env file
+
+
+STEP 2: Configure Azure (Optional)
+────────────────────────────────────────────────────────────────
+  Only if you want Azure container monitoring:
+
+  A. Create Service Principal:
+     az ad sp create-for-rbac --name "kiro-irc-bot-sp" \
+       --role Reader \
+       --scopes /subscriptions/SUB_ID/resourceGroups/RG \
+       --sdk-auth
+
+  B. Edit .env:
+     nano .env
+     (Fill in Azure credentials)
+
+  C. Test:
+     python3 test_azure_connection.py
+
+
+STEP 3: Run the App
+────────────────────────────────────────────────────────────────
+  source venv/bin/activate
+  python -m src.main
+
+  Done! 🎉
+
+
+╔════════════════════════════════════════════════════════════════╗
+║              WHAT SETUP.SH DOES                                ║
+╚════════════════════════════════════════════════════════════════╝
+
+✓ Checks Python version
+✓ Creates virtual environment
+✓ Installs all dependencies
+✓ Installs Azure SDK
+✓ Creates .env file
+✓ Checks Azure configuration
+✓ Tests Azure connection (if configured)
+✓ Shows helpful next steps
+
+
+╔════════════════════════════════════════════════════════════════╗
+║              FEATURES YOU GET                                  ║
+╚════════════════════════════════════════════════════════════════╝
+
+IRC Chat:
+  • Connect to IRC servers
+  • Join/leave channels
+  • Send/receive messages
+
+AI Commands:
+  • /ai list containers (Azure)
+  • /ai show status (Azure)
+  • /ai docker health (Local)
+  • /ai system-info
+
+Teletext Dashboard:
+  • Press F1 to toggle
+  • Real-time monitoring
+
+File Transfers:
+  • /grab command
+  • Secure transfers
+
+
+╔════════════════════════════════════════════════════════════════╗
+║              WITH vs WITHOUT AZURE                             ║
+╚════════════════════════════════════════════════════════════════╝
+
+WITHOUT Azure (works immediately):
+  ✓ IRC chat
+  ✓ Local Docker monitoring
+  ✓ File transfers
+  ✓ System info
+
+WITH Azure (after configuration):
+  ✓ Everything above PLUS:
+  ✓ Azure Container Instance monitoring
+  ✓ /ai list containers
+  ✓ /ai show status
+  ✓ /ai what are the IPs?
+  ✓ /ai show resources
+
+
+╔════════════════════════════════════════════════════════════════╗
+║              EXAMPLE SESSION                                   ║
+╚════════════════════════════════════════════════════════════════╝
+
+$ ./setup.sh
+🚀 Setting up Cord-TUI with Azure Integration...
+✓ Python version: 3.11.0
+✓ Virtual environment created
+✓ Dependencies installed
+✓ Azure SDK installed
+✓ .env file created
+⚠️  Azure credentials not configured
+✅ Setup complete!
+
+$ nano .env
+(Edit Azure credentials)
+
+$ python3 test_azure_connection.py
+✅ Authentication successful
+✅ Found 2 container(s)
+✅ All tests passed!
+
+$ source venv/bin/activate
+$ python -m src.main
+(App starts with Azure integration)
+
+
+╔════════════════════════════════════════════════════════════════╗
+║              TROUBLESHOOTING                                   ║
+╚════════════════════════════════════════════════════════════════╝
+
+"Python not found"
+  → Install Python 3.8+
+
+"pip install failed"
+  → Update pip: python3 -m pip install --upgrade pip
+
+"Azure connection failed"
+  → Check .env file has correct credentials
+  → Run: python3 test_azure_connection.py
+
+
+╔════════════════════════════════════════════════════════════════╗
+║              DOCUMENTATION                                     ║
+╚════════════════════════════════════════════════════════════════╝
+
+SETUP_COMPLETE_GUIDE.md    → Full setup guide
+AZURE_SETUP_GUIDE.md       → Azure configuration
+ENHANCED_QUERIES_GUIDE.md  → AI commands
+STATUS_VS_HEALTH.md        → Status vs health
+
+
+╔════════════════════════════════════════════════════════════════╗
+║              DO THIS NOW                                       ║
+╚════════════════════════════════════════════════════════════════╝
+
+1. ./setup.sh
+2. (Optional) Configure Azure in .env
+3. source venv/bin/activate
+4. python -m src.main
+
+Enjoy! 🚀
+
