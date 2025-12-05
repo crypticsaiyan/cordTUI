@@ -11,7 +11,8 @@
       "autoApprove": [
         "read_file",
         "list_directory",
-        "move_file"
+        "move_file",
+        "create_directory"
       ]
     }
   }

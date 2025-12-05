@@ -1064,12 +1064,19 @@ class Phosphor(App):
     
     def action_take_screenshot(self):
         """Take a screenshot and save it."""
+        import os
         from datetime import datetime
+        
+        # Ensure screenshots directory exists
+        screenshots_dir = "screenshots"
+        os.makedirs(screenshots_dir, exist_ok=True)
+        
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"phosphor_screenshot_{timestamp}.svg"
-        self.save_screenshot(filename)
+        filepath = os.path.join(screenshots_dir, filename)
+        self.save_screenshot(filepath)
         if self.chat_pane:
-            self.chat_pane.add_message("System", f"📸 Screenshot saved: {filename}", is_system=True)
+            self.chat_pane.add_message("System", f"📸 Screenshot saved: {filepath}", is_system=True)
     
     def action_show_keys(self):
         """Show the keyboard shortcuts screen."""
