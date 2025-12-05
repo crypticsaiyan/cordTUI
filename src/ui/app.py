@@ -56,6 +56,7 @@ class CordTUI(App):
         self.irc_connected = False
         self.connection_status = "disconnected"  # disconnected, connecting, connected
         self.channels_joined = set()  # Track which channels we've successfully joined
+        self.channels_joining = set()  # Track which channels are currently joining
         self.irc = None
         self.mcp = MCPClient()
         self.wormhole = WormholeClient()
@@ -145,6 +146,7 @@ class CordTUI(App):
         self.irc.set_message_callback(self._on_irc_message)
         self.irc.set_members_callback(self._on_members_update)
         self.irc.set_channel_list_callback(self._on_channel_list_received)
+        self.irc.set_join_callback(self._on_channel_joined)
         
         # Initialize audio with chosen settings
         self.audio = AudioEngine(
@@ -221,22 +223,11 @@ class CordTUI(App):
             server_channels = self.selected_server.get("channels", [])
             for channel in server_channels:
                 self.chat_pane.add_message("System", f"Joining {channel}...", is_system=True)
+                self.channels_joining.add(channel)
                 self.irc.join_channel(channel)
-                
-                # Wait a bit for the join to complete
-                await asyncio.sleep(1)
-                
-                # Mark as joined (we'll get confirmation via IRC events)
-                self.channels_joined.add(channel)
-                self.chat_pane.add_message("System", f"Joined {channel}", is_system=True)
             
-            self.chat_pane.add_message("System", "Ready to chat! Select a channel and start messaging.", is_system=True)
-            
-            # Update input placeholder
-            if self.current_channel in self.channels_joined:
-                self.input_bar.placeholder = f"Message {self.current_channel}"
-            else:
-                self.input_bar.placeholder = "Select a channel to start chatting"
+            # Update input placeholder - wait for join confirmation
+            self.input_bar.placeholder = "Joining channels..."
             
         except Exception as e:
             self.chat_pane.add_message("System", f"IRC connection failed: {e}", is_system=True)
@@ -255,6 +246,35 @@ class CordTUI(App):
         """Handle member list updates."""
         if channel == self.current_channel:
             self.call_from_thread(self._update_member_list_ui, members)
+    
+    def _on_channel_joined(self, channel: str, success: bool):
+        """Handle channel join completion."""
+        self.call_from_thread(self._handle_channel_joined, channel, success)
+    
+    def _handle_channel_joined(self, channel: str, success: bool):
+        """Handle channel join completion - called from main thread."""
+        if success:
+            # Remove from joining set and add to joined set
+            self.channels_joining.discard(channel)
+            self.channels_joined.add(channel)
+            
+            self.chat_pane.add_message("System", f"✓ Joined {channel}", is_system=True)
+            
+            # Update sidebar to show channel is ready
+            sidebar = self.query_one("#sidebar", Sidebar)
+            sidebar.mark_channel_ready(channel)
+            
+            # If this is the current channel, update placeholder
+            if channel == self.current_channel:
+                self.input_bar.placeholder = f"Message {self.current_channel}"
+            
+            # If all channels are joined, show ready message
+            if not self.channels_joining:
+                self.chat_pane.add_message("System", "✓ All channels ready! Start chatting.", is_system=True)
+        else:
+            # Join failed
+            self.channels_joining.discard(channel)
+            self.chat_pane.add_message("System", f"❌ Failed to join {channel}", is_system=True)
     
     def _on_channel_list_received(self, channels: list):
         """Handle channel list from IRC server."""
@@ -288,21 +308,34 @@ class CordTUI(App):
         # Update placeholder based on connection and channel status
         if not self.irc_connected:
             self.input_bar.placeholder = "Not connected to IRC"
-        elif self.current_channel not in self.channels_joined:
+        elif self.current_channel in self.channels_joining:
             self.input_bar.placeholder = f"Joining {self.current_channel}..."
+        elif self.current_channel not in self.channels_joined:
+            self.input_bar.placeholder = f"Not joined to {self.current_channel}"
         else:
             self.input_bar.placeholder = f"Message {self.current_channel}"
         
         # Switch chat pane to show this channel's messages
         self.chat_pane.switch_channel(self.current_channel)
-        self.chat_pane.add_message("System", f"Switched to {self.current_channel}", is_system=True)
+        
+        # Show appropriate message based on channel state
+        if self.current_channel in self.channels_joining:
+            self.chat_pane.add_message("System", f"Joining {self.current_channel}...", is_system=True)
+        elif self.current_channel not in self.channels_joined:
+            self.chat_pane.add_message("System", f"Not joined to {self.current_channel}. Use /join to join.", is_system=True)
+        else:
+            self.chat_pane.add_message("System", f"Switched to {self.current_channel}", is_system=True)
         
         # Update member list for new channel
-        members = self.irc.get_channel_members(self.current_channel)
-        if members:
-            self.member_list.update_members(members)
+        if self.current_channel in self.channels_joined:
+            members = self.irc.get_channel_members(self.current_channel)
+            if members:
+                self.member_list.update_members(members)
+            else:
+                # Show loading if no members yet
+                self.member_list.show_loading(self.current_channel)
         else:
-            # Show loading if no members yet
+            # Not joined yet
             self.member_list.show_loading(self.current_channel)
     
     async def on_input_submitted(self, event: Input.Submitted):
@@ -327,9 +360,14 @@ class CordTUI(App):
             self.chat_pane.add_message("System", "Not connected to IRC. Please wait for connection.", is_system=True)
             return
         
+        # Check if we're still joining this channel
+        if self.current_channel in self.channels_joining:
+            self.chat_pane.add_message("System", f"Still joining {self.current_channel}. Please wait...", is_system=True)
+            return
+        
         # Check if we've joined this channel
         if self.current_channel not in self.channels_joined:
-            self.chat_pane.add_message("System", f"Not joined to {self.current_channel}. Please wait...", is_system=True)
+            self.chat_pane.add_message("System", f"Not joined to {self.current_channel}. Use /join to join.", is_system=True)
             return
         
         # Handle commands
@@ -433,16 +471,16 @@ class CordTUI(App):
                     tree.root.add_leaf(f"# {channel}", data=channel)
                 
                 # Join the channel
+                self.channels_joining.add(channel)
                 self.irc.join_channel(channel)
-                self.channels_joined.add(channel)
                 
                 # Switch to the new channel
                 self.current_channel = channel
                 self.chat_pane.switch_channel(self.current_channel)
-                self.chat_pane.add_message("System", f"Joined {channel}", is_system=True)
+                self.chat_pane.add_message("System", f"Joining {channel}...", is_system=True)
                 
                 # Update UI
-                self.input_bar.placeholder = f"Message {self.current_channel}"
+                self.input_bar.placeholder = f"Joining {self.current_channel}..."
                 self.member_list.show_loading(channel)
         
         elif cmd == "bookmark":
@@ -516,20 +554,22 @@ class CordTUI(App):
         
         sidebar = self.query_one("#sidebar", Sidebar)
         
-        if self.current_channel in self.bookmarks:
-            # Remove bookmark
-            self.bookmarks.remove(self.current_channel)
-            sidebar.remove_bookmark(self.current_channel)
-            self._save_bookmarks()
-            if self.chat_pane:
-                self.chat_pane.add_message("System", f"Removed bookmark from {self.current_channel}", is_system=True)
-        else:
-            # Add bookmark
-            self.bookmarks.append(self.current_channel)
-            sidebar.add_bookmark(self.current_channel)
+        # Toggle bookmark
+        is_bookmarked = sidebar.toggle_bookmark(self.current_channel)
+        
+        # Update app's bookmark list
+        if is_bookmarked:
+            if self.current_channel not in self.bookmarks:
+                self.bookmarks.append(self.current_channel)
             self._save_bookmarks()
             if self.chat_pane:
                 self.chat_pane.add_message("System", f"⭐ Bookmarked {self.current_channel}", is_system=True)
+        else:
+            if self.current_channel in self.bookmarks:
+                self.bookmarks.remove(self.current_channel)
+            self._save_bookmarks()
+            if self.chat_pane:
+                self.chat_pane.add_message("System", f"Removed bookmark from {self.current_channel}", is_system=True)
     
     def request_channel_list(self, pattern: str = None):
         """Request channel list from IRC server."""
@@ -562,8 +602,8 @@ class CordTUI(App):
             tree.root.add_leaf(f"# {channel}", data=channel)
         
         # Join the channel
+        self.channels_joining.add(channel)
         self.irc.join_channel(channel)
-        self.channels_joined.add(channel)
         
         # Update recent channels in search screen for next time
         if hasattr(self, '_channel_search_screen'):
@@ -572,10 +612,10 @@ class CordTUI(App):
         # Switch to the new channel
         self.current_channel = channel
         self.chat_pane.switch_channel(self.current_channel)
-        self.chat_pane.add_message("System", f"Joined {channel}", is_system=True)
+        self.chat_pane.add_message("System", f"Joining {channel}...", is_system=True)
         
         # Update UI
-        self.input_bar.placeholder = f"Message {self.current_channel}"
+        self.input_bar.placeholder = f"Joining {self.current_channel}..."
         self.member_list.show_loading(channel)
     
     async def on_unmount(self):

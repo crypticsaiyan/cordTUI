@@ -67,17 +67,54 @@ class Sidebar(Container):
     def _refresh_tree(self):
         """Refresh the channel tree display."""
         tree = self.query_one(Tree)
+        
+        # Store currently selected node data before refresh
+        selected_channel = None
+        if tree.cursor_node and tree.cursor_node.data:
+            selected_channel = tree.cursor_node.data
+        
+        # Clear and rebuild tree
         tree.root.remove_children()
+        
+        # Combine all channels (bookmarked and regular)
+        all_channels = []
         
         # Add bookmarked channels first with a star
         if self.bookmarked_channels:
             for channel in self.bookmarked_channels:
-                tree.root.add_leaf(f"⭐ {channel}", data=channel)
+                node = tree.root.add_leaf(f"⭐ {channel}", data=channel)
+                all_channels.append(channel)
+                # Re-select if this was the selected channel
+                if channel == selected_channel:
+                    tree.select_node(node)
         
         # Add regular channels
         for channel in self.channels:
             if channel not in self.bookmarked_channels:
-                tree.root.add_leaf(channel, data=channel)
+                node = tree.root.add_leaf(channel, data=channel)
+                all_channels.append(channel)
+                # Re-select if this was the selected channel
+                if channel == selected_channel:
+                    tree.select_node(node)
+    
+    def mark_channel_ready(self, channel: str):
+        """Mark a channel as ready (joined successfully)."""
+        # This is mainly for visual feedback - could add a checkmark or color
+        # For now, just ensure it's in the tree
+        pass
+    
+    def toggle_bookmark(self, channel: str):
+        """Toggle bookmark status for a channel."""
+        if channel in self.bookmarked_channels:
+            self.remove_bookmark(channel)
+            return False  # Removed
+        else:
+            self.add_bookmark(channel)
+            return True  # Added
+    
+    def is_bookmarked(self, channel: str) -> bool:
+        """Check if a channel is bookmarked."""
+        return channel in self.bookmarked_channels
 
 
 class MemberList(Container):

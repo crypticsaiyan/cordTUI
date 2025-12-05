@@ -6,7 +6,7 @@
       "port": 6667,
       "ssl": false,
       "nick": "cord_user",
-      "channels": ["#testchannel", "#python", "#linux", "#programming"]
+      "channels": ["#sukhoi"]
     }
   ],
   "theme": {

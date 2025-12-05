@@ -17,6 +17,7 @@ class IRCClient:
         self.message_callback: Optional[Callable] = None
         self.members_callback: Optional[Callable] = None
         self.channel_list_callback: Optional[Callable] = None
+        self.join_callback: Optional[Callable] = None  # Callback for successful joins
         self.channel_members = {}  # Track members per channel
         self._names_in_progress = set()  # Track which channels are receiving NAMES
         self._channel_list = []  # Store channel list from LIST command
@@ -84,6 +85,9 @@ class IRCClient:
                     self._names_in_progress.discard(channel)
                     if self.members_callback and channel in self.channel_members:
                         self.members_callback(channel, self.channel_members[channel])
+                    # Notify that channel join is complete
+                    if self.join_callback:
+                        self.join_callback(channel, True)
             
             @client.Handler('JOIN')
             def handle_join(irc, hostmask, args):
@@ -188,6 +192,10 @@ class IRCClient:
     def set_channel_list_callback(self, callback: Callable):
         """Set callback for channel list updates."""
         self.channel_list_callback = callback
+    
+    def set_join_callback(self, callback: Callable):
+        """Set callback for channel join completion."""
+        self.join_callback = callback
     
     def get_channel_members(self, channel: str) -> list[str]:
         """Get list of members in a channel."""
