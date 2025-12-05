@@ -59,6 +59,7 @@ class PhosphorCommands(Provider):
             ("Toggle Bookmark", "Bookmark or unbookmark current channel", self._toggle_bookmark),
             ("Theme: Default", "Switch to default Discord-inspired theme", self._theme_default),
             ("Theme: Halloween 🎃", "Switch to spooky Halloween theme", self._theme_halloween),
+            ("Take Screenshot 📸", "Save a screenshot of the current screen", self._take_screenshot),
         ]
 
     async def search(self, query: str) -> Hits:
@@ -107,6 +108,11 @@ class PhosphorCommands(Provider):
         """Switch to Halloween theme."""
         if hasattr(self.app, 'set_theme'):
             self.app.set_theme("halloween")
+
+    async def _take_screenshot(self) -> None:
+        """Take a screenshot of the current screen."""
+        if hasattr(self.app, 'action_take_screenshot'):
+            self.app.action_take_screenshot()
 
 
 class Phosphor(App):
@@ -1055,6 +1061,15 @@ class Phosphor(App):
     def action_toggle_teletext(self):
         """Toggle the Teletext dashboard."""
         self.push_screen(TeletextScreen(app_ref=self))
+    
+    def action_take_screenshot(self):
+        """Take a screenshot and save it."""
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"phosphor_screenshot_{timestamp}.svg"
+        self.save_screenshot(filename)
+        if self.chat_pane:
+            self.chat_pane.add_message("System", f"📸 Screenshot saved: {filename}", is_system=True)
     
     def action_show_keys(self):
         """Show the keyboard shortcuts screen."""

@@ -136,45 +136,6 @@ Screen.halloween {
     color: #ff9900;
 }
 
-/* Halloween Command Palette */
-.halloween CommandPalette > Vertical {
-    background: #2d1f2d;
-    border: tall #ff6600;
-}
-
-.halloween CommandPalette > Vertical > Input {
-    background: #3d2a3d;
-    color: #ffcc00;
-}
-
-.halloween CommandPalette OptionList {
-    background: #2d1f2d;
-    scrollbar-color: #ff6600;
-}
-
-.halloween CommandPalette OptionList > .option-list--option {
-    color: #cc99ff;
-}
-
-.halloween CommandPalette OptionList > .option-list--option-highlighted {
-    background: #ff6600;
-    color: #000000;
-}
-
-.halloween CommandPalette OptionList > .option-list--option-hover {
-    background: #4a2a4a;
-}
-
-/* Halloween Slash Command Palette */
-.halloween #command-palette {
-    background: #2d1f2d;
-    border: solid #ff6600;
-}
-
-.halloween #command-palette .command-item.highlighted {
-    background: #ff6600;
-}
-
 /* ═══════════════════════════════════════════════════════════════════════════
    TEXTUAL COMMAND PALETTE (Ctrl+P) - Built-in Textual command palette
    Centered box overlay with Discord-inspired styling
@@ -235,6 +196,55 @@ CommandPalette OptionList > .option-list--option-highlighted {
 
 CommandPalette OptionList > .option-list--option-hover {
     background: #393c43;
+}
+
+/* Halloween Command Palette - MUST come after base styles */
+.halloween CommandPalette {
+    background: rgba(26, 10, 26, 0.9);
+}
+
+.halloween CommandPalette > Vertical {
+    background: #2d1f2d;
+    border: tall #ff6600;
+}
+
+.halloween CommandPalette > Vertical > Input {
+    background: #3d2a3d;
+    color: #ffcc00;
+    border: solid #ff6600;
+}
+
+.halloween CommandPalette > Vertical > Input:focus {
+    border: solid #ff9900;
+}
+
+.halloween CommandPalette OptionList {
+    background: #2d1f2d;
+    scrollbar-background: #2d1f2d;
+    scrollbar-color: #ff6600;
+}
+
+.halloween CommandPalette OptionList > .option-list--option {
+    color: #cc99ff;
+}
+
+.halloween CommandPalette OptionList > .option-list--option-highlighted {
+    background: #ff6600;
+    color: #000000;
+}
+
+.halloween CommandPalette OptionList > .option-list--option-hover {
+    background: #4a2a4a;
+}
+
+/* Halloween Slash Command Palette */
+.halloween #command-palette {
+    background: #2d1f2d;
+    border: solid #ff6600;
+}
+
+.halloween #command-palette .command-item.highlighted {
+    background: #ff6600;
 }
 
 /* KeysScreen CSS is defined in the class DEFAULT_CSS */

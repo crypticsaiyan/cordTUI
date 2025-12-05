@@ -1,5 +1,6 @@
 """Sidebar widget - channels and servers."""
 
+import asyncio
 from textual.app import ComposeResult
 from textual.containers import Container, Vertical
 from textual.widgets import Static, Tree
@@ -258,6 +259,8 @@ class MemberList(Container):
         self.members = []
         self.current_nick = None  # The current user's IRC nick
         self.selected_index = 0  # For keyboard navigation
+        self._skull_animation_task = None
+        self._skull_frame = 0
     
     def compose(self) -> ComposeResult:
         """Compose the member list."""
@@ -272,12 +275,92 @@ class MemberList(Container):
         """Set the current user's nick for highlighting."""
         self.current_nick = nick
     
+    def on_tree_node_selected(self, event: Tree.NodeSelected):
+        """Handle member selection for DM."""
+        if event.node.data:
+            nick = event.node.data
+            # Don't DM yourself
+            if nick != self.current_nick:
+                self.post_message(self.MemberClicked(nick))
+    
+    def show_loading(self, channel: str):
+        """Show loading state for member list."""
+        # Check if Halloween theme is active
+        is_halloween = hasattr(self.app, 'active_theme') and self.app.active_theme == "halloween"
+        
+        if is_halloween:
+            self.query_one("#member-count", Static).update(f"💀 Loading {channel}...")
+            loading_text = "💀 ☠️ 💀"
+        else:
+            self.query_one("#member-count", Static).update(f"Loading {channel}...")
+            loading_text = "Loading..."
+        
+        tree = self.query_one(Tree)
+        tree.clear()
+        tree.root.expand()
+        tree.root.add_leaf(loading_text, data=None)
+        
+        # Start animated loading if Halloween
+        if is_halloween:
+            self._start_skull_animation()
+
+    def _start_skull_animation(self):
+        """Start the rotating skull animation."""
+        # Cancel any existing animation
+        if self._skull_animation_task:
+            self._skull_animation_task.cancel()
+        self._skull_frame = 0
+        self._skull_animation_task = asyncio.create_task(self._animate_skulls())
+    
+    def _stop_skull_animation(self):
+        """Stop the skull animation."""
+        if self._skull_animation_task:
+            self._skull_animation_task.cancel()
+            self._skull_animation_task = None
+    
+    async def _animate_skulls(self):
+        """Animate rotating skulls in the loading indicator."""
+        skull_frames = [
+            "💀 ☠️ 💀",
+            "☠️ 💀 ☠️",
+            "💀 👻 💀",
+            "👻 💀 👻",
+            "💀 🎃 💀",
+            "🎃 💀 🎃",
+            "💀 🦇 💀",
+            "🦇 💀 🦇",
+        ]
+        
+        try:
+            while True:
+                tree = self.query_one(Tree)
+                # Only animate if tree has the loading leaf
+                if tree.root.children:
+                    first_child = tree.root.children[0]
+                    if first_child.data is None:  # Loading indicator
+                        frame = skull_frames[self._skull_frame % len(skull_frames)]
+                        first_child.set_label(frame)
+                        self._skull_frame += 1
+                
+                await asyncio.sleep(0.3)
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            pass
+    
     def update_members(self, members: list[str]):
         """Update the member list with current channel members."""
+        # Stop any skull animation when members load
+        self._stop_skull_animation()
+        
         self.members = sorted(members)
         
         # Update count header
-        self.query_one("#member-count", Static).update(f"Members ({len(self.members)})")
+        is_halloween = hasattr(self.app, 'active_theme') and self.app.active_theme == "halloween"
+        if is_halloween:
+            self.query_one("#member-count", Static).update(f"🎃 Members ({len(self.members)})")
+        else:
+            self.query_one("#member-count", Static).update(f"Members ({len(self.members)})")
         
         # Update tree with members
         tree = self.query_one(Tree)
@@ -292,19 +375,3 @@ class MemberList(Container):
             else:
                 label = format_username_colored(m)
             tree.root.add_leaf(label, data=clean_name)
-    
-    def on_tree_node_selected(self, event: Tree.NodeSelected):
-        """Handle member selection for DM."""
-        if event.node.data:
-            nick = event.node.data
-            # Don't DM yourself
-            if nick != self.current_nick:
-                self.post_message(self.MemberClicked(nick))
-    
-    def show_loading(self, channel: str):
-        """Show loading state for member list."""
-        self.query_one("#member-count", Static).update(f"Loading {channel}...")
-        tree = self.query_one(Tree)
-        tree.clear()
-        tree.root.expand()
-        tree.root.add_leaf("Loading...", data=None)
