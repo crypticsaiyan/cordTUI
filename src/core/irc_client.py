@@ -52,9 +52,10 @@ class IRCClient:
             # Set up handlers
             @client.Handler('PRIVMSG')
             def handle_privmsg(irc, hostmask, args):
-                nick = hostmask[0]
-                target = args[0]
-                message = args[1]
+                # Strip any IRC protocol artifacts (leading colons)
+                nick = hostmask[0].lstrip(':')
+                target = args[0].lstrip(':')
+                message = args[1].lstrip(':') if len(args) > 1 else ""
                 if self.message_callback:
                     self.message_callback(nick, target, message)
             
@@ -63,9 +64,10 @@ class IRCClient:
                 # miniirc format: args = ['yournick', '=', '#channel', 'nick1 nick2 nick3']
                 if len(args) >= 4:
                     channel = args[2]
-                    names_str = args[3]
+                    names_str = args[3].lstrip(':')  # Strip IRC protocol colon
                     names = names_str.split()
-                    clean_names = [name.lstrip('@+%&~') for name in names]
+                    # Strip IRC prefixes (@, +, etc.) and any remaining colons
+                    clean_names = [name.lstrip('@+%&~:') for name in names]
                     
                     if channel not in self._names_in_progress:
                         self._names_in_progress.add(channel)
@@ -74,9 +76,10 @@ class IRCClient:
                     self.channel_members[channel].extend(clean_names)
                 elif len(args) >= 3:
                     channel = args[1] if args[0] in ('=', '*', '@') else args[0]
-                    names_str = args[-1]
+                    names_str = args[-1].lstrip(':')  # Strip IRC protocol colon
                     names = names_str.split()
-                    clean_names = [name.lstrip('@+%&~') for name in names]
+                    # Strip IRC prefixes (@, +, etc.) and any remaining colons
+                    clean_names = [name.lstrip('@+%&~:') for name in names]
                     
                     if channel not in self._names_in_progress:
                         self._names_in_progress.add(channel)
@@ -97,8 +100,8 @@ class IRCClient:
             
             @client.Handler('JOIN')
             def handle_join(irc, hostmask, args):
-                nick = hostmask[0]
-                channel = args[0]
+                nick = hostmask[0].lstrip(':')
+                channel = args[0].lstrip(':')
                 if channel not in self.channel_members:
                     self.channel_members[channel] = []
                 if nick not in self.channel_members[channel]:
@@ -108,8 +111,8 @@ class IRCClient:
             
             @client.Handler('PART')
             def handle_part(irc, hostmask, args):
-                nick = hostmask[0]
-                channel = args[0]
+                nick = hostmask[0].lstrip(':')
+                channel = args[0].lstrip(':')
                 if channel in self.channel_members and nick in self.channel_members[channel]:
                     self.channel_members[channel].remove(nick)
                     if self.members_callback:
@@ -117,7 +120,7 @@ class IRCClient:
             
             @client.Handler('QUIT')
             def handle_quit(irc, hostmask, args):
-                nick = hostmask[0]
+                nick = hostmask[0].lstrip(':')
                 # Remove from all channels
                 for channel in self.channel_members:
                     if nick in self.channel_members[channel]:
@@ -168,20 +171,17 @@ class IRCClient:
             
             @client.Handler('433', colon=False)  # ERR_NICKNAMEINUSE - override miniirc's handler
             def handle_nick_in_use(irc, hostmask, args):
-                """Handle nickname already in use - try with number suffix.
-                
-                Note: We override miniirc's default handler which appends '_'.
-                We use numbered suffixes instead (nick1, nick2, etc.)
-                """
+                """Handle nickname already in use - try with random number suffix."""
+                import random
                 print(f"[IRC DEBUG] Nickname in use: {args}")
                 self._nick_attempt += 1
                 if self._nick_attempt <= self._max_nick_attempts:
-                    # Try original nick with number suffix
-                    new_nick = f"{self.original_nick}{self._nick_attempt}"
+                    # Generate random 3-4 digit number
+                    random_suffix = random.randint(100, 9999)
+                    new_nick = f"{self.original_nick}{random_suffix}"
                     # Truncate if too long (IRC max is usually 30)
                     if len(new_nick) > 30:
-                        # Shorten original nick to fit number
-                        suffix = str(self._nick_attempt)
+                        suffix = str(random_suffix)
                         max_base = 30 - len(suffix)
                         new_nick = f"{self.original_nick[:max_base]}{suffix}"
                     print(f"[IRC DEBUG] Trying new nick: {new_nick}")
@@ -203,6 +203,8 @@ class IRCClient:
                 # The first arg after our nick in 001 is usually the welcome message
                 # miniirc sets _current_nick from the 001 response
                 confirmed_nick = irc._current_nick if hasattr(irc, '_current_nick') and irc._current_nick else self.nick
+                # Strip any IRC protocol artifacts
+                confirmed_nick = confirmed_nick.lstrip(':')
                 print(f"[IRC DEBUG] Welcome received, nick confirmed: {confirmed_nick}, our tracking: {self.nick}")
                 
                 # Ensure all nick tracking is in sync
@@ -216,8 +218,8 @@ class IRCClient:
             @client.Handler('NICK')
             def handle_nick_change(irc, hostmask, args):
                 """Handle nickname changes (including our own)."""
-                old_nick = hostmask[0]
-                new_nick = args[0] if args else old_nick
+                old_nick = hostmask[0].lstrip(':')
+                new_nick = (args[0] if args else old_nick).lstrip(':')
                 print(f"[IRC DEBUG] Nick change: {old_nick} -> {new_nick}")
                 # If it's our nick changing, update it
                 if old_nick == self.nick or old_nick == self.original_nick:
