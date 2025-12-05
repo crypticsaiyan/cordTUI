@@ -51,31 +51,36 @@ class IRCClient:
                 if self.message_callback:
                     self.message_callback(nick, target, message)
             
-            @client.Handler('353')  # RPL_NAMREPLY
+            @client.Handler('353', colon=False)  # RPL_NAMREPLY
             def handle_names(irc, hostmask, args):
-                # args: [nick, '=', '#channel', ':user1 user2 user3']
+                # miniirc format: args = ['yournick', '=', '#channel', 'nick1 nick2 nick3']
                 if len(args) >= 4:
                     channel = args[2]
-                    # Remove leading : from the names string
-                    names_str = args[3].lstrip(':')
+                    names_str = args[3]
                     names = names_str.split()
-                    # Remove mode prefixes (@, +, etc.)
-                    clean_names = [name.lstrip('@+%&~:') for name in names]
+                    clean_names = [name.lstrip('@+%&~') for name in names]
                     
-                    # If this is the first 353 for this channel, clear the list
                     if channel not in self._names_in_progress:
                         self._names_in_progress.add(channel)
                         self.channel_members[channel] = []
                     
-                    # Extend the list (NAMES can come in multiple 353 messages for large channels)
+                    self.channel_members[channel].extend(clean_names)
+                elif len(args) >= 3:
+                    channel = args[1] if args[0] in ('=', '*', '@') else args[0]
+                    names_str = args[-1]
+                    names = names_str.split()
+                    clean_names = [name.lstrip('@+%&~') for name in names]
+                    
+                    if channel not in self._names_in_progress:
+                        self._names_in_progress.add(channel)
+                        self.channel_members[channel] = []
+                    
                     self.channel_members[channel].extend(clean_names)
             
-            @client.Handler('366')  # RPL_ENDOFNAMES
+            @client.Handler('366', colon=False)  # RPL_ENDOFNAMES
             def handle_names_end(irc, hostmask, args):
-                # args: [nick, '#channel', 'End of /NAMES list']
                 if len(args) >= 2:
                     channel = args[1]
-                    # Mark NAMES as complete for this channel
                     self._names_in_progress.discard(channel)
                     if self.members_callback and channel in self.channel_members:
                         self.members_callback(channel, self.channel_members[channel])
