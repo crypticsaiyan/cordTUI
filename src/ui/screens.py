@@ -405,7 +405,8 @@ class TeletextScreen(Screen):
         super().__init__(**kwargs)
         self.app_ref = app_ref
         self.update_task = None
-        self.start_time = time.time()
+        # Use app's start time if available, otherwise fall back to current time
+        self.start_time = getattr(app_ref, 'start_time', None) or time.time()
         self.frame_count = 0
         self.blink_state = False
         self.ticker_offset = 0

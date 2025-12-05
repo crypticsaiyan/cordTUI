@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import time
 from pathlib import Path
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal
@@ -143,6 +144,7 @@ class Phosphor(App):
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.start_time = time.time()  # Track app start time for uptime
         self.config = self._load_config()
         self.bookmarks = self._load_bookmarks()
         self.current_channel = "#general"
